@@ -8,12 +8,25 @@ A comprehensive React application built with Remix v19 and TypeScript, demonstra
 - Remix
 - TypeScript
 - Vercel (Deployment)
+- pnpm (Package Manager)
 
 ## 📦 Initial Setup
 
-### 1. Create Remix Project
+### 1. Install pnpm
 ```bash
-npx create-remix@latest
+# Using npm
+npm install -g pnpm
+
+# Using curl for Unix systems
+curl -fsSL https://get.pnpm.io/install.sh | sh -
+
+# On Windows (PowerShell)
+iwr https://get.pnpm.io/install.ps1 -useb | iex
+```
+
+### 2. Create Remix Project
+```bash
+pnpm create remix@latest
 ```
 
 Follow the prompts:
@@ -22,7 +35,16 @@ Follow the prompts:
 - Select "Remix App Server"
 - Choose TypeScript
 
-### 2. Git Setup
+### 3. Switch to pnpm (if you used npm initially)
+```bash
+# Remove node_modules and package-lock.json
+rm -rf node_modules package-lock.json
+
+# Create pnpm-lock.yaml
+pnpm install
+```
+
+### 4. Git Setup
 
 Initialize Git repository:
 ```bash
@@ -37,15 +59,16 @@ node_modules
 /public/build
 .env
 .DS_Store
+pnpm-debug.log
 ```
 
 Initial commit:
 ```bash
 git add .
-git commit -m "Initial commit: Basic Remix setup with TypeScript"
+git commit -m "Initial commit: Basic Remix setup with TypeScript using pnpm"
 ```
 
-### 3. GitHub Repository Setup
+### 5. GitHub Repository Setup
 
 1. Create new repository on GitHub:
    - Go to GitHub.com
@@ -67,7 +90,7 @@ git checkout -b dev
 git push -u origin dev
 ```
 
-### 4. Vercel Deployment
+### 6. Vercel Deployment
 
 1. Go to [Vercel](https://vercel.com)
 2. Sign up/Login with GitHub
@@ -75,9 +98,20 @@ git push -u origin dev
 4. Import your GitHub repository
 5. Configure project:
    - Framework Preset: Select "Remix"
-   - Build and Output Settings: Use defaults
+   - Build and Output Settings: 
+     ```
+     Build Command: pnpm build
+     Install Command: pnpm install
+     ```
    - Environment Variables: Add if needed
-6. Click "Deploy"
+6. Add `vercel.json` to project root:
+```json
+{
+  "installCommand": "pnpm install",
+  "buildCommand": "pnpm build"
+}
+```
+7. Click "Deploy"
 
 ## 💻 Local Development
 
@@ -88,12 +122,12 @@ git clone [your-repository-url]
 
 2. Install dependencies:
 ```bash
-npm install
+pnpm install
 ```
 
 3. Start the development server:
 ```bash
-npm run dev
+pnpm dev
 ```
 
 The application will be available at `http://localhost:3000`
@@ -117,6 +151,7 @@ remix-tutorial/
 │   └── routes/           # Application routes
 ├── public/               # Static assets
 ├── .gitignore           # Git ignore rules
+├── vercel.json          # Vercel configuration
 └── README.md            # Project documentation
 ```
 
@@ -124,7 +159,7 @@ remix-tutorial/
 
 1. Feature Development:
 ```bash
-git checkout development
+git checkout dev
 git checkout -b feature/your-feature-name
 # Make changes
 git add .
@@ -133,20 +168,20 @@ git push origin feature/your-feature-name
 ```
 
 2. Create Pull Request:
-   - Create PR from feature branch to development
+   - Create PR from feature branch to dev
    - Wait for review and Vercel preview deployment
    - Merge after approval
 
 3. Production Deployment:
-   - Create PR from development to main
+   - Create PR from dev to main
    - Review and merge for production deployment
 
 ## 🛠 Available Scripts
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm start` - Start production server
-- `npm run typecheck` - Check TypeScript types
+- `pnpm dev` - Start development server
+- `pnpm build` - Build for production
+- `pnpm start` - Start production server
+- `pnpm typecheck` - Check TypeScript types
 
 ## 📝 License
 
