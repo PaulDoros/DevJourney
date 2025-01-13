@@ -13,6 +13,7 @@ A comprehensive React application built with Remix v19 and TypeScript, demonstra
 ## 📦 Initial Setup
 
 ### 1. Install pnpm
+
 ```bash
 # Using npm
 npm install -g pnpm
@@ -25,17 +26,20 @@ iwr https://get.pnpm.io/install.ps1 -useb | iex
 ```
 
 ### 2. Create Remix Project
+
 ```bash
 pnpm create remix@latest
 ```
 
 Follow the prompts:
+
 - Name your app (e.g., `remix-tutorial`)
 - Choose "Just the basics"
 - Select "Remix App Server"
 - Choose TypeScript
 
 ### 3. Switch to pnpm (if you used npm initially)
+
 ```bash
 # Remove node_modules and package-lock.json
 rm -rf node_modules package-lock.json
@@ -47,11 +51,13 @@ pnpm install
 ### 4. Git Setup
 
 Initialize Git repository:
+
 ```bash
 git init
 ```
 
 Create `.gitignore` file with:
+
 ```plaintext
 node_modules
 /.cache
@@ -63,6 +69,7 @@ pnpm-debug.log
 ```
 
 Initial commit:
+
 ```bash
 git add .
 git commit -m "Initial commit: Basic Remix setup with TypeScript using pnpm"
@@ -71,6 +78,7 @@ git commit -m "Initial commit: Basic Remix setup with TypeScript using pnpm"
 ### 5. GitHub Repository Setup
 
 1. Create new repository on GitHub:
+
    - Go to GitHub.com
    - Click "New repository"
    - Name your repository
@@ -78,6 +86,7 @@ git commit -m "Initial commit: Basic Remix setup with TypeScript using pnpm"
    - Click "Create repository"
 
 2. Connect local to remote:
+
 ```bash
 git remote add origin [your-github-repo-url]
 git branch -M main
@@ -85,6 +94,7 @@ git push -u origin main
 ```
 
 3. Create development branch:
+
 ```bash
 git checkout -b dev
 git push -u origin dev
@@ -98,34 +108,39 @@ git push -u origin dev
 4. Import your GitHub repository
 5. Configure project:
    - Framework Preset: Select "Remix"
-   - Build and Output Settings: 
+   - Build and Output Settings:
      ```
      Build Command: pnpm build
      Install Command: pnpm install
      ```
    - Environment Variables: Add if needed
 6. Add `vercel.json` to project root:
+
 ```json
 {
   "installCommand": "pnpm install",
   "buildCommand": "pnpm build"
 }
 ```
+
 7. Click "Deploy"
 
 ## 💻 Local Development
 
 1. Clone the repository:
+
 ```bash
 git clone [your-repository-url]
 ```
 
 2. Install dependencies:
+
 ```bash
 pnpm install
 ```
 
 3. Start the development server:
+
 ```bash
 pnpm dev
 ```
@@ -135,6 +150,7 @@ The application will be available at `http://localhost:3000`
 ## 🌐 Deployment
 
 This project uses Vercel for deployment:
+
 - Main branch deployments are automatic
 - Preview deployments are created for pull requests
 - Production URL: [your-app-url]
@@ -158,6 +174,7 @@ remix-tutorial/
 ## 🔄 Git Workflow
 
 1. Feature Development:
+
 ```bash
 git checkout dev
 git checkout -b feature/your-feature-name
@@ -168,6 +185,7 @@ git push origin feature/your-feature-name
 ```
 
 2. Create Pull Request:
+
    - Create PR from feature branch to dev
    - Wait for review and Vercel preview deployment
    - Merge after approval
