@@ -70,28 +70,31 @@ export async function createUserSession(userId: string, redirectTo: string) {
  */
 export async function createGuestUser() {
   try {
-    // Generate a UUID for guest user
-    const guestId = crypto.randomUUID();
+    const timestamp = Date.now();
     const guestUser = {
-      id: guestId,
-      username: `Guest-${Math.floor(Math.random() * 10000)}`,
-      email: `${guestId}@guest.local`,
+      username: `Guest-${timestamp}-${Math.floor(Math.random() * 10000)}`,
+      email: `guest_${timestamp}@guest.local`,
       is_guest: true,
       points: 0,
       achievements: [],
-      created_at: new Date().toISOString(),
     };
 
-    const { data: user, error } = await supabase
+    // First insert the user
+    const { data: insertedUser, error: insertError } = await supabase
       .from('users')
-      .insert([guestUser])
-      .select()
-      .single();
+      .insert(guestUser)
+      .select('*'); // Add explicit column selection
 
-    if (error) throw error;
-    if (!user) throw new Error('No user data returned');
+    if (insertError || !insertedUser || insertedUser.length === 0) {
+      console.error('Guest user creation error:', insertError);
+      throw new Error('Failed to create guest user');
+    }
 
-    return user;
+    const user = insertedUser[0]; // Get the first user from the array
+    console.log('Created guest user:', user); // Debug log
+
+    // Create a session for the guest user
+    return createUserSession(user.id, '/');
   } catch (error) {
     console.error('Guest user creation error:', error);
     throw new Error('Failed to create guest user');
@@ -103,39 +106,51 @@ export async function createGuestUser() {
 // 1. Create auth user (handles email/password)
 // 2. Create user profile (stores additional user data)
 export async function createUser(
-  username: string, // Display name chosen by user
-  email: string, // User's email for authentication
-  password: string, // User's password (will be hashed by Supabase)
+  username: string,
+  email: string,
+  password: string,
 ) {
-  // First create the authentication user in Supabase Auth system
-  // signUp handles password hashing and email verification
-  const { data: authData, error: authError } = await supabase.auth.signUp({
-    email,
-    password,
-  });
-
-  if (authError) throw authError;
-
-  // Then create the user profile in our users table
-  // This stores additional user data beyond authentication
-  const { data: user, error: profileError } = await supabase
-    .from('users')
-    .insert([
-      {
-        id: authData.user?.id, // Link profile to auth user using their ID
-        username,
-        email,
-        isGuest: false, // Permanent account, not a guest
-        points: 0, // Starting points
-        achievements: [], // Empty achievements array
-        createdAt: new Date().toISOString(), // Timestamp of account creation
+  try {
+    // First create the authentication user
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          username, // Store username in auth metadata
+        },
       },
-    ])
-    .select()
-    .single();
+    });
 
-  if (profileError) throw profileError;
-  return user;
+    if (authError) throw authError;
+    if (!authData.user) throw new Error('No user returned from auth signup');
+
+    // Then create the user profile
+    const { data: user, error: profileError } = await supabase
+      .from('users')
+      .insert([
+        {
+          id: authData.user.id, // Use the auth user's ID
+          username,
+          email,
+          is_guest: false,
+          points: 0,
+          achievements: [],
+        },
+      ])
+      .select('*')
+      .single();
+
+    if (profileError) {
+      console.error('Profile creation error:', profileError);
+      throw profileError;
+    }
+
+    return user;
+  } catch (error) {
+    console.error('User creation error:', error);
+    throw error;
+  }
 }
 
 // Retrieves a user by their ID

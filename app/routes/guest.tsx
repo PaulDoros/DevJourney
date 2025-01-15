@@ -1,20 +1,12 @@
-import { redirect } from '@remix-run/node';
-import { createGuestUser, createUserSession } from '~/utils/auth.server';
+import { redirect, type LoaderFunctionArgs } from '@remix-run/node';
+import { createGuestUser } from '~/utils/auth.server';
 
-export async function loader({ request }: { request: Request }) {
+export async function loader({ request }: LoaderFunctionArgs) {
   try {
-    // Get returnTo from URL if present
-    const url = new URL(request.url);
-    const returnTo = url.searchParams.get('returnTo') || '/';
-
-    const guestUser = await createGuestUser();
-    return createUserSession(guestUser.id, returnTo);
+    return await createGuestUser();
   } catch (error) {
-    console.error('Guest access error:', error);
-    // Pass more specific error message
-    return redirect(
-      '/login?error=Unable to create guest session. Please try again.',
-    );
+    console.error('Guest creation failed:', error);
+    return redirect('/login?error=guest_login_failed');
   }
 }
 

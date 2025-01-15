@@ -3,6 +3,7 @@ import { Form, useActionData, useNavigation, Link } from '@remix-run/react';
 import { Card } from '~/components/ui/Card';
 import { ThemeSwitcher } from '~/components/ThemeSwitcher';
 import { createServerSupabase } from '~/utils/supabase';
+import { createUserSession } from '~/utils/auth.server';
 import { useState } from 'react';
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -41,26 +42,73 @@ export async function action({ request }: ActionFunctionArgs) {
       return json({ error: 'Invalid form submission' }, { status: 400 });
     }
 
-    const { error } =
-      intent === 'signup'
-        ? await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-              emailRedirectTo: `${process.env.PUBLIC_URL}/auth/callback`,
-            },
-          })
-        : await supabase.auth.signInWithPassword({ email, password });
-
-    if (error) throw error;
-
     if (intent === 'signup') {
+      // Handle signup
+      const { data: authData, error: signUpError } = await supabase.auth.signUp(
+        {
+          email,
+          password,
+        },
+      );
+
+      if (signUpError) throw signUpError;
+      if (!authData.user) throw new Error('No user returned from signup');
+
+      // Create user profile in our database
+      const { error: profileError } = await supabase
+        .from('users')
+        .insert([
+          {
+            id: authData.user.id,
+            email: authData.user.email,
+            username: email.split('@')[0], // Use part before @ as username
+            is_guest: false,
+          },
+        ])
+        .select()
+        .single();
+
+      if (profileError) throw profileError;
+
       return json({
         message: 'Check your email to confirm your account!',
       });
-    }
+    } else {
+      // Handle signin
+      const { data: signInData, error: signInError } =
+        await supabase.auth.signInWithPassword({ email, password });
 
-    return redirect('/dashboard');
+      if (signInError) throw signInError;
+      if (!signInData.user) throw new Error('No user returned from signin');
+
+      // Get or create user profile
+      const { data: profile, error: profileError } = await supabase
+        .from('users')
+        .select()
+        .eq('id', signInData.user.id)
+        .single();
+
+      if (profileError) {
+        // If profile doesn't exist, create it
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert([
+            {
+              id: signInData.user.id,
+              email: signInData.user.email,
+              username: email.split('@')[0],
+              is_guest: false,
+            },
+          ])
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+      }
+
+      // Create session and redirect
+      return createUserSession(signInData.user.id, '/dashboard');
+    }
   } catch (error: any) {
     return json({ error: error.message }, { status: 400 });
   }
