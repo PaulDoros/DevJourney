@@ -72,10 +72,8 @@
    - Configure email templates (optional)
 
 4. **API Keys & Environment Variables**
-   - Go to Project Settings → API
-   - Copy Project URL and anon/public key
-   - Create `.env` file:
    ```env
+   # .env file
    SUPABASE_URL=your_project_url
    SUPABASE_ANON_KEY=your_anon_key
    ```
@@ -95,20 +93,21 @@
    ```
 
 2. **Production Environment (Vercel)**
-   - Generate a different secret for production
-   - Add to Vercel environment variables:
-     1. Go to Vercel Dashboard → Project
-     2. Settings → Environment Variables
-     3. Add `SESSION_SECRET`
+
+   ```bash
+   # Generate a different secret for production
+   node -e "console.log(crypto.randomBytes(32).toString('hex'))"
+
+   # Add to Vercel Environment Variables
+   # Dashboard → Project → Settings → Environment Variables
+   SESSION_SECRET=generated_production_secret
+   ```
 
 #### Session Configuration
-
-1. typescript
-
 ```typescript
 const sessionStorage = createCookieSessionStorage({
   cookie: {
-    name: "session",
+    name: "_session",
     sameSite: "lax",
     path: "/",
     httpOnly: true,
@@ -117,3 +116,161 @@ const sessionStorage = createCookieSessionStorage({
   },
 });
 ```
+
+### 4. Hosting: Vercel
+
+#### Initial Setup
+
+```bash
+# Install Vercel CLI
+pnpm install -g vercel
+
+# Login to Vercel
+vercel login
+```
+
+#### Project Configuration
+
+```json
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/remix"
+    }
+  ]
+}
+```
+
+#### Environment Variables Setup
+
+1. Go to Vercel Dashboard
+2. Navigate to Project Settings
+3. Add Environment Variables:
+   ```env
+   SUPABASE_URL=your_production_supabase_url
+   SUPABASE_ANON_KEY=your_production_anon_key
+   SESSION_SECRET=your_production_session_secret
+   ```
+
+## Data Flow Architecture
+
+### 1. Authentication Flow
+
+```mermaid
+sequenceDiagram
+    User->>Client: Login Request
+    Client->>Remix: POST /login
+    Remix->>Supabase: Authenticate
+    Supabase-->>Database: Verify Credentials
+    Database-->>Supabase: User Data
+    Supabase-->>Remix: Auth Token
+    Remix->>Client: Set Session Cookie
+    Client->>User: Redirect to Dashboard
+```
+
+### 2. Data Structures
+
+#### User Interface
+
+```typescript
+interface User {
+  id: string;
+  email?: string;
+  username: string;
+  isGuest: boolean;
+  points: number;
+  achievements: Achievement[];
+  createdAt: string;
+}
+```
+
+#### Achievement Interface
+
+```typescript
+interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  points: number;
+  unlockedAt?: string;
+}
+```
+
+## Security Considerations
+
+### 1. Authentication Security
+
+- HTTP-only cookies prevent XSS attacks
+- Secure session management with encrypted cookies
+- CSRF protection via SameSite cookie attribute
+- Rate limiting on authentication endpoints
+
+### 2. Database Security
+
+- Row Level Security (RLS) ensures data isolation
+- Prepared statements prevent SQL injection
+- Input validation on all user inputs
+- Encrypted connections to database
+
+### 3. API Security
+
+- Request validation for all inputs
+- Proper error handling and logging
+- CORS configuration
+- API rate limiting
+
+## Development Workflow
+
+### 1. Local Development
+
+```bash
+# Start development server
+pnpm dev
+
+# Run type checking
+pnpm typecheck
+
+# Run linting
+pnpm lint
+```
+
+### 2. Deployment
+
+```bash
+# Deploy to production
+vercel --prod
+```
+
+### 3. Environment Management
+
+- Use `.env.local` for local development
+- Use Vercel environment variables for production
+- Never commit sensitive information to version control
+
+## Monitoring and Logging
+
+### 1. Error Tracking
+
+- Vercel Analytics for performance monitoring
+- Console logging for development
+- Error boundaries for React component errors
+
+### 2. Performance Monitoring
+
+- Vercel Analytics
+- Supabase Dashboard
+- Custom logging implementation
+
+```
+
+This architecture document provides:
+1. Complete setup instructions
+2. Security considerations
+3. Development workflow
+4. Environment management
+5. Monitoring solutions
+6. Data structure definitions
+```
+

@@ -37,12 +37,12 @@
   }
 
   .multi .multi-card {
-    @apply bg-opacity-10 backdrop-blur-md border border-opacity-20 border-white shadow-xl;
+    @apply border border-white border-opacity-20 bg-opacity-10 shadow-xl backdrop-blur-md;
   }
 
   /* Animation classes */
   .animate-gradient {
-    @apply bg-[length:200%_200%] animate-[gradient_8s_linear_infinite];
+    @apply animate-[gradient_8s_linear_infinite] bg-[length:200%_200%];
   }
 }
 
@@ -50,5 +50,20 @@
 @layer utilities {
   .flex-center {
     @apply flex items-center justify-center;
+  }
+}
+
+@layer components {
+  dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  dialog {
+    padding: 0;
+    border: none;
+  }
+
+  dialog:focus {
+    outline: none;
   }
 }

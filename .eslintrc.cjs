@@ -3,37 +3,37 @@ module.exports = {
   root: true,
 
   // Parser configuration
-  parser: "@typescript-eslint/parser",
+  parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 2023,
-    sourceType: "module",
+    sourceType: 'module',
     ecmaFeatures: {
       jsx: true,
     },
-    project: ["./tsconfig.json"],
+    project: ['./tsconfig.json'],
   },
 
   // Plugin and extension configuration
   extends: [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
-    "plugin:@typescript-eslint/recommended-requiring-type-checking",
-    "plugin:react/recommended",
-    "plugin:react/jsx-runtime",
-    "plugin:react-hooks/recommended",
-    "plugin:jsx-a11y/recommended",
-    "plugin:import/recommended",
-    "plugin:import/typescript",
-    "plugin:prettier/recommended",
+    'eslint:recommended',
+    'plugin:@typescript-eslint/recommended',
+    'plugin:@typescript-eslint/recommended-requiring-type-checking',
+    'plugin:react/recommended',
+    'plugin:react/jsx-runtime',
+    'plugin:react-hooks/recommended',
+    'plugin:jsx-a11y/recommended',
+    'plugin:import/recommended',
+    'plugin:import/typescript',
+    'plugin:prettier/recommended',
   ],
 
   plugins: [
-    "@typescript-eslint",
-    "react",
-    "react-hooks",
-    "jsx-a11y",
-    "import",
-    "prettier",
+    '@typescript-eslint',
+    'react',
+    'react-hooks',
+    'jsx-a11y',
+    'import',
+    'prettier',
   ],
 
   // Environment configuration
@@ -46,9 +46,9 @@ module.exports = {
   // Project-specific settings
   settings: {
     react: {
-      version: "detect",
+      version: 'detect',
     },
-    "import/resolver": {
+    'import/resolver': {
       typescript: {
         alwaysTryTypes: true,
       },
@@ -58,77 +58,77 @@ module.exports = {
   // Custom rules
   rules: {
     // TypeScript specific rules
-    "@typescript-eslint/explicit-function-return-type": "off",
-    "@typescript-eslint/explicit-module-boundary-types": "off",
-    "@typescript-eslint/no-unused-vars": [
-      "warn",
+    '@typescript-eslint/explicit-function-return-type': 'off',
+    '@typescript-eslint/explicit-module-boundary-types': 'off',
+    '@typescript-eslint/no-unused-vars': [
+      'warn',
       {
-        argsIgnorePattern: "^_",
-        varsIgnorePattern: "^_",
-        caughtErrorsIgnorePattern: "^_",
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
       },
     ],
-    "@typescript-eslint/no-explicit-any": "warn",
-    "@typescript-eslint/no-floating-promises": "warn",
+    '@typescript-eslint/no-explicit-any': 'warn',
+    '@typescript-eslint/no-floating-promises': 'warn',
 
     // React specific rules
-    "react/prop-types": "off",
-    "react/jsx-uses-react": "off",
-    "react/react-in-jsx-scope": "off",
-    "react-hooks/rules-of-hooks": "error",
-    "react-hooks/exhaustive-deps": "warn",
+    'react/prop-types': 'off',
+    'react/jsx-uses-react': 'off',
+    'react/react-in-jsx-scope': 'off',
+    'react-hooks/rules-of-hooks': 'error',
+    'react-hooks/exhaustive-deps': 'warn',
 
     // Import rules
-    "import/order": [
-      "error",
+    'import/order': [
+      'error',
       {
         groups: [
-          "builtin",
-          "external",
-          "internal",
-          ["parent", "sibling"],
-          "index",
-          "object",
-          "type",
+          'builtin',
+          'external',
+          'internal',
+          ['parent', 'sibling'],
+          'index',
+          'object',
+          'type',
         ],
         pathGroups: [
           {
-            pattern: "react",
-            group: "builtin",
-            position: "before",
+            pattern: 'react',
+            group: 'builtin',
+            position: 'before',
           },
         ],
-        pathGroupsExcludedImportTypes: ["react"],
-        "newlines-between": "always",
+        pathGroupsExcludedImportTypes: ['react'],
+        'newlines-between': 'always',
         alphabetize: {
-          order: "asc",
+          order: 'asc',
           caseInsensitive: true,
         },
       },
     ],
-    "import/no-unresolved": "error",
-    "import/no-cycle": "warn",
+    'import/no-unresolved': 'error',
+    'import/no-cycle': 'warn',
 
     // General rules
-    "no-console": ["warn", { allow: ["warn", "error"] }],
-    "prettier/prettier": ["error", {}, { usePrettierrc: true }],
-    "jsx-a11y/anchor-is-valid": [
-      "error",
+    'no-console': ['warn', { allow: ['warn', 'error'] }],
+    'prettier/prettier': ['error', {}, { usePrettierrc: true }],
+    'jsx-a11y/anchor-is-valid': [
+      'error',
       {
-        components: ["Link"],
-        specialLink: ["hrefLeft", "hrefRight"],
-        aspects: ["invalidHref", "preferButton"],
+        components: ['Link'],
+        specialLink: ['hrefLeft', 'hrefRight'],
+        aspects: ['invalidHref', 'preferButton'],
       },
     ],
   },
 
   // Files to ignore
   ignorePatterns: [
-    "build/**",
-    "node_modules/**",
-    "public/build/**",
-    "*.config.js",
-    "*.config.ts",
-    "coverage/**",
+    'build/**',
+    'node_modules/**',
+    'public/build/**',
+    '*.config.js',
+    '*.config.ts',
+    'coverage/**',
   ],
 };

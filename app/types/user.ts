@@ -1,17 +1,16 @@
-export interface User {
-  id: string;
-  email?: string;
-  username: string;
-  isGuest: boolean;
-  points: number;
-  achievements: Achievement[];
-  createdAt: string;
-}
-
-export interface Achievement {
+export type Achievement = {
   id: string;
   name: string;
   description: string;
+  unlockedAt: string;
+};
+
+export type User = {
+  id: string;
+  username: string;
+  email: string;
+  is_guest: boolean;
   points: number;
-  unlockedAt?: string;
-}
+  achievements: Achievement[];
+  created_at: string;
+};

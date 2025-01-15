@@ -1,7 +1,7 @@
 // Import necessary dependencies from Remix and local files
-import { createCookieSessionStorage, redirect } from "@remix-run/node";
-import { supabase } from "./supabase.server"; // Supabase client instance
-import type { Achievement, User } from "~/types/user"; // TypeScript types
+import { createCookieSessionStorage, redirect } from '@remix-run/node';
+import { supabase } from './supabase.server'; // Supabase client instance
+import type { Achievement, User } from '~/types/user'; // TypeScript types
 
 // Session management configuration
 // Cookies are small pieces of data stored in the browser that help maintain state
@@ -9,53 +9,93 @@ import type { Achievement, User } from "~/types/user"; // TypeScript types
 // HTTP-only cookies cannot be accessed by JavaScript, making them more secure against XSS attacks
 const sessionStorage = createCookieSessionStorage({
   cookie: {
-    name: "_session", // The name of the cookie stored in the browser
-    sameSite: "lax", // Controls how cookie is sent with cross-site requests (prevents CSRF)
-    path: "/", // The cookie will be available for all paths in the domain
+    name: '_session', // The name of the cookie stored in the browser
+    sameSite: 'lax', // Controls how cookie is sent with cross-site requests (prevents CSRF)
+    path: '/', // The cookie will be available for all paths in the domain
     httpOnly: true, // Makes cookie inaccessible to browser's JavaScript (security feature)
-    secrets: [process.env.SESSION_SECRET || "s3cr3t"], // Secret keys used to sign the cookie to prevent tampering
-    secure: process.env.NODE_ENV === "production", // Cookie only sent over HTTPS in production
+    secrets: [process.env.SESSION_SECRET || 's3cr3t'], // Secret keys used to sign the cookie to prevent tampering
+    secure: process.env.NODE_ENV === 'production', // Cookie only sent over HTTPS in production
   },
 });
+
+// Get session from request
+export async function getSession(request: Request) {
+  const cookie = request.headers.get('Cookie');
+  return sessionStorage.getSession(cookie);
+}
+
+// Get user from session
+export async function getUserFromSession(request: Request) {
+  try {
+    const session = await getSession(request);
+    const userId = session.get('userId');
+    if (!userId) return null;
+
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching user:', error);
+      return null;
+    }
+
+    return user;
+  } catch (error) {
+    console.error('Session error:', error);
+    return null;
+  }
+}
 
 // Creates a new session for a user and redirects them
 // getSession() creates or retrieves a session object that can store data
 // commitSession() serializes the session data into a cookie string
 export async function createUserSession(userId: string, redirectTo: string) {
   const session = await sessionStorage.getSession(); // Create/get session object
-  session.set("userId", userId); // Store user ID in session data
+  session.set('userId', userId); // Store user ID in session data
   return redirect(redirectTo, {
     headers: {
-      "Set-Cookie": await sessionStorage.commitSession(session), // Convert session to cookie header
+      'Set-Cookie': await sessionStorage.commitSession(session), // Convert session to cookie header
     },
   });
 }
 
 // User Management Functions
 
-// Creates a temporary guest user account
-// Math.random() generates a number between 0 and 1
-// Math.floor() rounds down to nearest integer
-// This combination creates a random number between 0 and 9999 for guest usernames
+/**
+ * Creates a temporary guest user account
+ * Returns a Promise that resolves to the created user or throws an error
+ */
 export async function createGuestUser() {
-  const guestUser = {
-    username: `Guest-${Math.floor(Math.random() * 10000)}`, // Generate random guest ID
-    isGuest: true, // Boolean flag to identify guest accounts
-    points: 0, // Initial points counter for gamification
-    achievements: [], // Empty array to store future achievements
-    createdAt: new Date().toISOString(), // Current timestamp in ISO format (e.g., "2024-01-20T15:30:00.000Z")
-  };
+  try {
+    // Generate a UUID for guest user
+    const guestId = crypto.randomUUID();
+    const guestUser = {
+      id: guestId,
+      username: `Guest-${Math.floor(Math.random() * 10000)}`,
+      email: `${guestId}@guest.local`,
+      is_guest: true,
+      points: 0,
+      achievements: [],
+      created_at: new Date().toISOString(),
+    };
 
-  // Insert guest user into database
-  // .single() ensures we get a single record back instead of an array
-  const { data: user, error } = await supabase
-    .from("users")
-    .insert([guestUser])
-    .select()
-    .single();
+    const { data: user, error } = await supabase
+      .from('users')
+      .insert([guestUser])
+      .select()
+      .single();
 
-  if (error) throw error;
-  return user;
+    if (error) throw error;
+    if (!user) throw new Error('No user data returned');
+
+    return user;
+  } catch (error) {
+    console.error('Guest user creation error:', error);
+    throw new Error('Failed to create guest user');
+  }
 }
 
 // Creates a new permanent user account with authentication
@@ -79,7 +119,7 @@ export async function createUser(
   // Then create the user profile in our users table
   // This stores additional user data beyond authentication
   const { data: user, error: profileError } = await supabase
-    .from("users")
+    .from('users')
     .insert([
       {
         id: authData.user?.id, // Link profile to auth user using their ID
@@ -103,9 +143,9 @@ export async function createUser(
 // The asterisk (*) in select("*") means select all columns from the table
 export async function getUserById(userId: string): Promise<User | null> {
   const { data: user, error } = await supabase
-    .from("users")
-    .select("*") // Select all user fields
-    .eq("id", userId) // 'eq' means equals - find where id matches userId
+    .from('users')
+    .select('*') // Select all user fields
+    .eq('id', userId) // 'eq' means equals - find where id matches userId
     .single(); // Get single record (throws error if multiple found)
 
   if (error) return null;
@@ -117,9 +157,9 @@ export async function getUserById(userId: string): Promise<User | null> {
 // Returns the updated user object
 export async function updateUserPoints(userId: string, points: number) {
   const { data, error } = await supabase
-    .from("users")
+    .from('users')
     .update({ points }) // Set the points field to new value
-    .eq("id", userId) // Update where id matches
+    .eq('id', userId) // Update where id matches
     .select() // Return the updated record
     .single(); // Expect one result
 
@@ -133,9 +173,9 @@ export async function updateUserPoints(userId: string, points: number) {
 export async function addAchievement(userId: string, achievement: Achievement) {
   // First retrieve current achievements
   const { data: user } = await supabase
-    .from("users")
-    .select("achievements") // Only need achievements column
-    .eq("id", userId)
+    .from('users')
+    .select('achievements') // Only need achievements column
+    .eq('id', userId)
     .single();
 
   // Create new achievements array
@@ -151,9 +191,9 @@ export async function addAchievement(userId: string, achievement: Achievement) {
 
   // Update user record with new achievements array
   const { data, error } = await supabase
-    .from("users")
+    .from('users')
     .update({ achievements: updatedAchievements })
-    .eq("id", userId)
+    .eq('id', userId)
     .select()
     .single();
 
