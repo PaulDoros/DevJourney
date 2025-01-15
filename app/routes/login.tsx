@@ -14,7 +14,6 @@ export async function action({ request }: ActionFunctionArgs) {
   if (!intent) {
     return json({ error: 'Invalid form submission' }, { status: 400 });
   }
-
   const supabase = createServerSupabase(request);
 
   try {
@@ -23,11 +22,14 @@ export async function action({ request }: ActionFunctionArgs) {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: intent.toString() as 'github' | 'google',
         options: {
-          redirectTo: `${process.env.PUBLIC_URL}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
+          redirectTo: `${process.env.PUBLIC_URL || 'http://localhost:3000'}/auth/callback`,
+          queryParams:
+            intent.toString() === 'google'
+              ? {
+                  access_type: 'offline',
+                  prompt: 'consent',
+                }
+              : undefined,
         },
       });
       if (error) throw error;
