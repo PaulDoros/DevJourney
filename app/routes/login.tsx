@@ -1,10 +1,43 @@
-import { json, redirect, type ActionFunctionArgs } from '@remix-run/node';
+import {
+  json,
+  LoaderFunctionArgs,
+  redirect,
+  type ActionFunctionArgs,
+} from '@remix-run/node';
 import { Form, useActionData, useNavigation, Link } from '@remix-run/react';
 import { Card } from '~/components/ui/Card';
 import { ThemeSwitcher } from '~/components/ThemeSwitcher';
 import { createServerSupabase } from '~/utils/supabase';
-import { createUserSession } from '~/utils/auth.server';
+import { getEnvVars } from '~/utils/env.server';
+import {
+  createUserSession,
+  getUserFromSession as A,
+} from '~/utils/auth.server';
+import { getUserFromSession } from '~/utils/session.server';
 import { useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
+
+type ActionData =
+  | { error: string; message?: never }
+  | { message: string; error?: never }
+  | undefined;
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  const user = await getUserFromSession(request);
+  const user2 = await A(request);
+  console.log('PULE', user);
+  console.log('PULE2', user2);
+  // If user is already logged in, redirect to home
+  if (user) {
+    return redirect('/');
+  }
+
+  // Get the redirectTo parameter
+  const url = new URL(request.url);
+  const redirectTo = url.searchParams.get('redirectTo') || '/';
+
+  return json({ redirectTo });
+}
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
@@ -13,8 +46,12 @@ export async function action({ request }: ActionFunctionArgs) {
   const password = formData.get('password');
 
   if (!intent) {
-    return json({ error: 'Invalid form submission' }, { status: 400 });
+    return json<ActionData>(
+      { error: 'Invalid form submission' },
+      { status: 400 },
+    );
   }
+
   const supabase = createServerSupabase(request);
 
   try {
@@ -39,7 +76,10 @@ export async function action({ request }: ActionFunctionArgs) {
 
     // Handle email/password auth
     if (typeof email !== 'string' || typeof password !== 'string') {
-      return json({ error: 'Invalid form submission' }, { status: 400 });
+      return json<ActionData>(
+        { error: 'Invalid form submission' },
+        { status: 400 },
+      );
     }
 
     if (intent === 'signup') {
@@ -55,13 +95,13 @@ export async function action({ request }: ActionFunctionArgs) {
       if (!authData.user) throw new Error('No user returned from signup');
 
       // Create user profile in our database
-      const { error: profileError } = await supabase
+      const { data: user, error: profileError } = await supabase
         .from('users')
         .insert([
           {
             id: authData.user.id,
             email: authData.user.email,
-            username: email.split('@')[0], // Use part before @ as username
+            username: email.split('@')[0],
             is_guest: false,
           },
         ])
@@ -70,9 +110,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
       if (profileError) throw profileError;
 
-      return json({
-        message: 'Check your email to confirm your account!',
-      });
+      return json<ActionData>({ message: 'Account created successfully!' });
     } else {
       // Handle signin
       const { data: signInData, error: signInError } =
@@ -81,36 +119,47 @@ export async function action({ request }: ActionFunctionArgs) {
       if (signInError) throw signInError;
       if (!signInData.user) throw new Error('No user returned from signin');
 
-      // Get or create user profile
-      const { data: profile, error: profileError } = await supabase
+      const env = getEnvVars();
+
+      // Use service role client for admin access
+      const adminClient = createClient(
+        env.SUPABASE_URL,
+        env.SUPABASE_SERVICE_ROLE_KEY,
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+          },
+        },
+      );
+
+      // Always try to create/update the profile
+      const { data: user, error: upsertError } = await adminClient
         .from('users')
-        .select()
-        .eq('id', signInData.user.id)
+        .upsert(
+          {
+            id: signInData.user.id,
+            email: signInData.user.email,
+            username: email.split('@')[0],
+            is_guest: false,
+            points: 0,
+            achievements: [],
+          },
+          { onConflict: 'id', ignoreDuplicates: false },
+        )
+        .select('*')
         .single();
 
-      if (profileError) {
-        // If profile doesn't exist, create it
-        const { error: insertError } = await supabase
-          .from('users')
-          .insert([
-            {
-              id: signInData.user.id,
-              email: signInData.user.email,
-              username: email.split('@')[0],
-              is_guest: false,
-            },
-          ])
-          .select()
-          .single();
-
-        if (insertError) throw insertError;
+      if (upsertError) {
+        console.error('Profile upsert error:', upsertError);
+        throw upsertError;
       }
 
-      // Create session and redirect
-      return createUserSession(signInData.user.id, '/dashboard');
+      return createUserSession(signInData.user.id, '/');
     }
   } catch (error: any) {
-    return json({ error: error.message }, { status: 400 });
+    console.error('Auth error:', error);
+    return json<ActionData>({ error: error.message }, { status: 400 });
   }
 }
 
@@ -176,15 +225,17 @@ export default function Login() {
         <h2 className="mb-6 text-center text-2xl font-bold">
           {isSignUp ? 'Create Account' : 'Sign In'}
         </h2>
-
+        {/* @ts-ignore */}
         {actionData?.error && (
           <div className="mb-4 rounded-lg bg-red-100 p-3 text-sm text-red-600">
+            {/* @ts-ignore */}
             {actionData.error}
           </div>
         )}
-
+        {/* @ts-ignore */}
         {actionData?.message && (
           <div className="mb-4 rounded-lg bg-green-100 p-3 text-sm text-green-600">
+            {/* @ts-ignore */}
             {actionData.message}
           </div>
         )}

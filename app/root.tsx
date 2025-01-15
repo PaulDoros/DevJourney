@@ -9,6 +9,7 @@ import {
   useLocation,
   useLoaderData,
   LiveReload,
+  json,
 } from '@remix-run/react';
 import type { LinksFunction, LoaderFunctionArgs } from '@remix-run/node';
 import { AnimatePresence } from 'framer-motion';
@@ -54,52 +55,9 @@ export const links: LinksFunction = () => [
 ];
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const response = new Response();
-  const supabase = createServerSupabase(request);
-
-  try {
-    const [
-      {
-        data: { session },
-      },
-      theme,
-      user,
-    ] = await Promise.all([
-      supabase.auth.getSession(),
-      getTheme(request),
-      getUserFromSession(request),
-    ]);
-
-    // Combine session data with user data
-    const sessionData = session
-      ? {
-          ...session,
-          user: {
-            ...session.user,
-            ...user,
-          },
-        }
-      : null;
-
-    return Response.json(
-      {
-        session: sessionData,
-        theme,
-        user,
-      },
-      { headers: response.headers },
-    );
-  } catch (error) {
-    console.error('Loader error:', error);
-    return Response.json(
-      {
-        session: null,
-        theme: 'light', // default theme
-        user: null,
-      },
-      { headers: response.headers },
-    );
-  }
+  const user = await getUserFromSession(request);
+  console.log('Root loader - user:', user); // Debug log
+  return json({ user });
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {

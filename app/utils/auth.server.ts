@@ -2,6 +2,8 @@
 import { createCookieSessionStorage, redirect } from '@remix-run/node';
 import { supabase } from './supabase.server'; // Supabase client instance
 import type { Achievement, User } from '~/types/user'; // TypeScript types
+import { createClient } from '@supabase/supabase-js';
+import { getEnvVars } from './env.server'; // Add this import
 
 // Session management configuration
 // Cookies are small pieces of data stored in the browser that help maintain state
@@ -29,17 +31,72 @@ export async function getUserFromSession(request: Request) {
   try {
     const session = await getSession(request);
     const userId = session.get('userId');
-    if (!userId) return null;
 
-    const { data: user, error } = await supabase
+    console.log('Attempting to fetch user with ID:', userId);
+
+    if (!userId) {
+      console.log('No userId in session');
+      return null;
+    }
+
+    const env = getEnvVars(); // Get environment variables
+
+    // Use service role client for admin access
+    const adminClient = createClient(
+      env.SUPABASE_URL,
+      env.SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      },
+    );
+
+    // Get the user profile directly from the users table
+    const { data: user, error: profileError } = await adminClient
       .from('users')
       .select('*')
       .eq('id', userId)
       .single();
 
-    if (error) {
-      console.error('Error fetching user:', error);
-      return null;
+    if (profileError) {
+      console.error('Profile fetch error:', profileError);
+
+      // Get the current auth session
+      const {
+        data: { session: authSession },
+        error: authError,
+      } = await supabase.auth.getSession();
+
+      if (authError || !authSession?.user) {
+        console.error('Auth session error:', authError);
+        return null;
+      }
+
+      // If profile doesn't exist but auth is valid, create it
+      const { data: newUser, error: insertError } = await adminClient
+        .from('users')
+        .insert([
+          {
+            id: userId,
+            email: authSession.user.email,
+            username:
+              authSession.user.email?.split('@')[0] || `user-${Date.now()}`,
+            is_guest: false,
+            points: 0,
+            achievements: [],
+          },
+        ])
+        .select('*')
+        .single();
+
+      if (insertError) {
+        console.error('Failed to create profile:', insertError);
+        return null;
+      }
+
+      return newUser;
     }
 
     return user;
@@ -53,11 +110,19 @@ export async function getUserFromSession(request: Request) {
 // getSession() creates or retrieves a session object that can store data
 // commitSession() serializes the session data into a cookie string
 export async function createUserSession(userId: string, redirectTo: string) {
-  const session = await sessionStorage.getSession(); // Create/get session object
-  session.set('userId', userId); // Store user ID in session data
+  const session = await sessionStorage.getSession();
+  session.set('userId', userId);
+
+  console.log('Creating session for user:', userId); // Debug log
+
+  // Set a longer session expiry (optional)
+  const cookieOptions = {
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+  };
+
   return redirect(redirectTo, {
     headers: {
-      'Set-Cookie': await sessionStorage.commitSession(session), // Convert session to cookie header
+      'Set-Cookie': await sessionStorage.commitSession(session, cookieOptions),
     },
   });
 }
