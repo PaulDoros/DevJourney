@@ -4,7 +4,13 @@ import {
   redirect,
   type ActionFunctionArgs,
 } from '@remix-run/node';
-import { Form, useActionData, useNavigation, Link } from '@remix-run/react';
+import {
+  Form,
+  useActionData,
+  useNavigation,
+  Link,
+  useLoaderData,
+} from '@remix-run/react';
 import { Card } from '~/components/ui/Card';
 import { ThemeSwitcher } from '~/components/ThemeSwitcher';
 import { createServerSupabase } from '~/utils/supabase';
@@ -42,6 +48,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const intent = formData.get('intent');
   const email = formData.get('email');
   const password = formData.get('password');
+  const redirectTo = formData.get('redirectTo') || '/';
 
   if (!intent) {
     return json<ActionData>(
@@ -58,18 +65,31 @@ export async function action({ request }: ActionFunctionArgs) {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: intent.toString() as 'github' | 'google',
         options: {
-          redirectTo: `${process.env.PUBLIC_URL || 'http://localhost:3000'}/auth/callback`,
+          redirectTo: `${process.env.PUBLIC_URL || process.env.PRODUCTION_URL}/auth/callback`,
+          skipBrowserRedirect: false,
           queryParams:
             intent.toString() === 'google'
               ? {
                   access_type: 'offline',
                   prompt: 'consent',
+                  // Add these if needed:
+                  // hd: '*', // Allows any Google domain
+                  // include_granted_scopes: 'true',
                 }
               : undefined,
         },
       });
-      if (error) throw error;
-      return redirect(data.url);
+
+      if (error) {
+        console.error('OAuth error:', error);
+        throw error;
+      }
+      if (!data?.url) throw new Error('No OAuth URL returned');
+
+      // Log the URL for debugging
+      console.log('OAuth redirect URL:', data.url);
+
+      return redirect(data.url.toString());
     }
 
     // Handle email/password auth
@@ -119,15 +139,6 @@ export async function action({ request }: ActionFunctionArgs) {
 
       const env = getEnvVars();
 
-      console.log('Environment loaded:', {
-        url: env.SUPABASE_URL.slice(0, 20),
-        serviceKey: {
-          full: env.SUPABASE_SERVICE_ROLE_KEY,
-          start: env.SUPABASE_SERVICE_ROLE_KEY.slice(0, 10),
-          length: env.SUPABASE_SERVICE_ROLE_KEY.length,
-        },
-      });
-
       // Use service role client for admin access
       const adminClient = createClient(
         env.SUPABASE_URL,
@@ -164,11 +175,14 @@ export async function action({ request }: ActionFunctionArgs) {
       return createUserSession(signInData.user.id, '/');
     }
   } catch (error: any) {
+    console.error('Auth error:', error);
     return json<ActionData>({ error: error.message }, { status: 400 });
   }
 }
 
 const SocialButtons = ({ isSubmitting }: { isSubmitting: boolean }) => {
+  const { redirectTo } = useLoaderData<typeof loader>();
+
   const socialProviders = [
     {
       name: 'google',
@@ -177,7 +191,7 @@ const SocialButtons = ({ isSubmitting }: { isSubmitting: boolean }) => {
         <svg className="h-5 w-5" viewBox="0 0 24 24">
           <path
             fill="currentColor"
-            d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 3.36 2.16 2.16 2.84 5.213 2.84 7.667 0 .76-.053 1.467-.173 2.053H12.48z"
+            d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
           />
         </svg>
       ),
@@ -204,6 +218,7 @@ const SocialButtons = ({ isSubmitting }: { isSubmitting: boolean }) => {
           disabled={isSubmitting}
           className="w-full rounded-lg border border-gray-300 bg-light-primary px-4 py-2.5 text-sm font-medium text-light-text hover:bg-light-secondary disabled:opacity-50 retro:border-retro-text/30 retro:bg-retro-primary retro:text-retro-text retro:hover:bg-retro-secondary multi:border-white/50 multi:bg-multi-primary/60 multi:text-white multi:shadow-md multi:transition-all multi:hover:scale-105 multi:hover:bg-multi-primary/80 multi:hover:shadow-lg dark:border-gray-600 dark:bg-dark-primary dark:text-dark-text dark:hover:bg-dark-secondary"
         >
+          <input type="hidden" name="redirectTo" value={redirectTo} />
           <div className="flex items-center justify-center gap-2">
             {provider.icon}
             Continue with {provider.label}
@@ -254,7 +269,7 @@ export default function Login() {
             <div className="w-full border-t border-gray-300 retro:border-retro-text/30 multi:border-white/50 dark:border-gray-600"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="bg-light-primary px-2 text-light-text retro:bg-retro-primary retro:text-retro-text multi:bg-multi-primary/60 multi:bg-transparent multi:text-white multi:drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] dark:bg-dark-primary dark:text-dark-text">
+            <span className="bg-light-primary px-2 text-light-text retro:bg-retro-primary retro:text-retro-text multi:bg-transparent multi:text-white multi:drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] dark:bg-dark-primary dark:text-dark-text">
               or continue with email
             </span>
           </div>
