@@ -3,7 +3,6 @@ import { MetaFunction, useLoaderData, Form } from '@remix-run/react';
 import { GuestBanner } from '~/components/GuestBanner';
 import { ThemeSwitcher } from '~/components/ThemeSwitcher';
 import { requireUser } from '~/utils/session.server';
-import Login from './login';
 
 export const meta: MetaFunction = () => {
   return [
@@ -14,7 +13,7 @@ export const meta: MetaFunction = () => {
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUser(request);
-  return Response.json({ user });
+  return json({ user });
 }
 
 export default function Index() {
@@ -48,9 +47,8 @@ export default function Index() {
 
       <div className="flex items-center justify-center">
         <div className="flex flex-col items-center gap-16">
-          {' '}
           <header className="flex flex-col items-center gap-9">
-            <h1 className="leading text-2xl font-bold text-gray-800 dark:text-gray-100">
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
               Welcome to <span className="sr-only">Remix</span>
             </h1>
             <ThemeSwitcher />
@@ -81,7 +79,7 @@ export default function Index() {
                     rel="noreferrer"
                   >
                     {icon}
-                    {text}
+                    <span>{text}</span>
                   </a>
                 </li>
               ))}

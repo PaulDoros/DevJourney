@@ -48,7 +48,6 @@ export async function action({ request }: ActionFunctionArgs) {
   const intent = formData.get('intent');
   const email = formData.get('email');
   const password = formData.get('password');
-  const redirectTo = formData.get('redirectTo') || '/';
 
   if (!intent) {
     return json<ActionData>(
@@ -57,39 +56,50 @@ export async function action({ request }: ActionFunctionArgs) {
     );
   }
 
-  const supabase = createServerSupabase(request);
+  const { supabase, response } = createServerSupabase(request);
+
+  // Add this: Create admin client for privileged operations
+  const env = getEnvVars();
+  const adminClient = createClient(
+    env.SUPABASE_URL,
+    env.SUPABASE_SERVICE_ROLE_KEY,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    },
+  );
 
   try {
     // Handle social logins
-    if (['github', 'google'].includes(intent.toString())) {
+    if (['git', 'google'].includes(intent.toString())) {
+      const provider = intent.toString() === 'git' ? 'github' : 'google';
+
       const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: intent.toString() as 'github' | 'google',
+        provider,
         options: {
-          redirectTo: `${process.env.PUBLIC_URL || process.env.PRODUCTION_URL}/auth/callback`,
-          skipBrowserRedirect: false,
+          redirectTo: `${process.env.PUBLIC_URL || 'http://localhost:3000'}/auth/callback`,
           queryParams:
-            intent.toString() === 'google'
+            provider === 'google'
               ? {
                   access_type: 'offline',
                   prompt: 'consent',
-                  // Add these if needed:
-                  // hd: '*', // Allows any Google domain
-                  // include_granted_scopes: 'true',
                 }
               : undefined,
         },
       });
 
-      if (error) {
-        console.error('OAuth error:', error);
-        throw error;
-      }
+      if (error) throw error;
       if (!data?.url) throw new Error('No OAuth URL returned');
 
-      // Log the URL for debugging
-      console.log('OAuth redirect URL:', data.url);
-
-      return redirect(data.url.toString());
+      // Return response with cookies
+      const redirectResponse = redirect(data.url.toString());
+      const cookieHeader = response.headers.get('Set-Cookie');
+      if (cookieHeader) {
+        redirectResponse.headers.append('Set-Cookie', cookieHeader);
+      }
+      return redirectResponse;
     }
 
     // Handle email/password auth
@@ -106,6 +116,11 @@ export async function action({ request }: ActionFunctionArgs) {
         {
           email,
           password,
+          options: {
+            data: {
+              username: email.split('@')[0],
+            },
+          },
         },
       );
 
@@ -115,49 +130,10 @@ export async function action({ request }: ActionFunctionArgs) {
       // Create user profile in our database
       const { data: user, error: profileError } = await supabase
         .from('users')
-        .insert([
+        .upsert(
           {
             id: authData.user.id,
             email: authData.user.email,
-            username: email.split('@')[0],
-            is_guest: false,
-          },
-        ])
-        .select()
-        .single();
-
-      if (profileError) throw profileError;
-
-      return json<ActionData>({ message: 'Account created successfully!' });
-    } else {
-      // Handle signin
-      const { data: signInData, error: signInError } =
-        await supabase.auth.signInWithPassword({ email, password });
-
-      if (signInError) throw signInError;
-      if (!signInData.user) throw new Error('No user returned from signin');
-
-      const env = getEnvVars();
-
-      // Use service role client for admin access
-      const adminClient = createClient(
-        env.SUPABASE_URL,
-        env.SUPABASE_SERVICE_ROLE_KEY,
-        {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false,
-          },
-        },
-      );
-
-      // Always try to create/update the profile
-      const { data: user, error: upsertError } = await adminClient
-        .from('users')
-        .upsert(
-          {
-            id: signInData.user.id,
-            email: signInData.user.email,
             username: email.split('@')[0],
             is_guest: false,
             points: 0,
@@ -165,18 +141,128 @@ export async function action({ request }: ActionFunctionArgs) {
           },
           { onConflict: 'id', ignoreDuplicates: false },
         )
-        .select('*')
+        .select()
         .single();
 
-      if (upsertError) {
-        throw upsertError;
+      if (profileError) throw profileError;
+
+      // If email confirmation is required
+      if (authData.user.confirmation_sent_at) {
+        return json<ActionData>({
+          message: 'Please check your email to confirm your account',
+        });
       }
 
-      return createUserSession(signInData.user.id, '/');
+      // If no confirmation required, log them in
+      const userSession = await createUserSession(authData.user.id, '/');
+      const cookieHeader = response.headers.get('Set-Cookie');
+      if (cookieHeader) {
+        userSession.headers.append('Set-Cookie', cookieHeader);
+      }
+      return userSession;
+    } else {
+      // Handle signin
+      const { data: signInData, error: signInError } =
+        await supabase.auth.signInWithPassword({ email, password });
+
+      if (signInError) {
+        console.error('Sign in error:', signInError);
+
+        // Check if user exists in auth.users with email/password
+        const { data: authData, error: authError } =
+          await adminClient.auth.admin.listUsers({
+            page: 1,
+            perPage: 100,
+          });
+
+        if (authError) {
+          console.error('Error checking auth users:', authError);
+        }
+
+        const emailPasswordUser = authData?.users?.find(
+          (user) =>
+            user.email?.toLowerCase() === email.toLowerCase() &&
+            user.app_metadata?.provider === 'email',
+        );
+
+        if (emailPasswordUser) {
+          // User exists with email/password but password might be wrong
+          return json<ActionData>(
+            { error: 'Invalid password. Please try again.' },
+            { status: 400 },
+          );
+        }
+
+        // Check if user exists with social login
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', email)
+          .maybeSingle();
+
+        if (existingUser) {
+          return json<ActionData>(
+            {
+              error:
+                'This email is registered with a social login (Google/GitHub). Please use that method to sign in.',
+            },
+            { status: 400 },
+          );
+        }
+
+        // No user found with this email at all
+        return json<ActionData>(
+          { error: 'No account found with this email. Please sign up first.' },
+          { status: 400 },
+        );
+      }
+
+      if (!signInData.user) throw new Error('No user returned from signin');
+
+      // Check if user profile exists, create if it doesn't
+      const { data: profile } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', signInData.user.id)
+        .single();
+
+      if (!profile) {
+        // Create profile if it doesn't exist
+        const { error: profileError } = await supabase
+          .from('users')
+          .insert([
+            {
+              id: signInData.user.id,
+              email: signInData.user.email,
+              username: email.split('@')[0],
+              is_guest: false,
+              points: 0,
+              achievements: [],
+            },
+          ])
+          .single();
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+          throw profileError;
+        }
+      }
+
+      // Create session and merge cookies
+      const userSession = await createUserSession(signInData.user.id, '/');
+      const cookieHeader = response.headers.get('Set-Cookie');
+      if (cookieHeader) {
+        userSession.headers.append('Set-Cookie', cookieHeader);
+      }
+
+      return userSession;
     }
   } catch (error: any) {
     console.error('Auth error:', error);
-    return json<ActionData>({ error: error.message }, { status: 400 });
+    return json<ActionData>(
+      { error: error.message || 'An error occurred' },
+      { status: 400 },
+    );
   }
 }
 
@@ -197,7 +283,7 @@ const SocialButtons = ({ isSubmitting }: { isSubmitting: boolean }) => {
       ),
     },
     {
-      name: 'github',
+      name: 'git',
       label: 'GitHub',
       icon: (
         <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
