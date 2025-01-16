@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+@layer base {
+  :root {
+    min-height: 100vh;
+  }
+
+  body {
+    min-height: 100vh;
+  }
+}
+
+/* Theme styles */
+@layer components {
+  .light body {
+    @apply bg-light-secondary;
+  }
+
+  .dark body {
+    @apply bg-dark-secondary;
+  }
+
+  .retro body {
+    @apply bg-retro-secondary;
+  }
+
+  .multi body {
+    @apply bg-gradient-to-br from-multi-gradient-1 via-multi-gradient-2 to-multi-gradient-3;
+  }
+
+  /* Add any other theme-specific global styles */
+  .multi .multi-text-gradient {
+    @apply bg-gradient-to-r from-multi-gradient-1 via-multi-gradient-2 to-multi-gradient-3 bg-clip-text text-transparent;
+  }
+
+  .multi .multi-card {
+    @apply border border-white border-opacity-20 bg-opacity-10 shadow-xl backdrop-blur-md;
+  }
+
+  /* Animation classes */
+  .animate-gradient {
+    @apply animate-[gradient_8s_linear_infinite] bg-[length:200%_200%];
+  }
+}
+
+/* Utility styles */
+@layer utilities {
+  .flex-center {
+    @apply flex items-center justify-center;
+  }
+}
+
+@layer components {
+  dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  dialog {
+    padding: 0;
+    border: none;
+  }
+
+  dialog:focus {
+    outline: none;
+  }
+}

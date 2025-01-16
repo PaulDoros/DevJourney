@@ -1,53 +1,93 @@
-import type { MetaFunction } from "@remix-run/node";
+import { type LoaderFunctionArgs, json } from '@remix-run/node';
+import { MetaFunction, useLoaderData, Form } from '@remix-run/react';
+import { GuestBanner } from '~/components/GuestBanner';
+import { ThemeSwitcher } from '~/components/ThemeSwitcher';
+import { requireUser } from '~/utils/session.server';
+import Login from './login';
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "New Remix App" },
-    { name: "description", content: "Welcome to Remix!" },
+    { title: 'Dev journey' },
+    { name: 'description', content: 'Dev journey' },
   ];
 };
 
+export async function loader({ request }: LoaderFunctionArgs) {
+  const user = await requireUser(request);
+  return Response.json({ user });
+}
+
 export default function Index() {
+  const { user } = useLoaderData<typeof loader>();
+
   return (
-    <div className="flex h-screen items-center justify-center">
-      <div className="flex flex-col items-center gap-16">
-        <header className="flex flex-col items-center gap-9">
-          <h1 className="leading text-2xl font-bold text-gray-800 dark:text-gray-100">
-            Welcome to <span className="sr-only">Remix</span>
-          </h1>
-          <div className="h-[144px] w-[434px]">
-            <img
-              src="/logo-light.png"
-              alt="Remix"
-              className="block w-full dark:hidden"
-            />
-            <img
-              src="/logo-dark.png"
-              alt="Remix"
-              className="hidden w-full dark:block"
-            />
-          </div>
-        </header>
-        <nav className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-gray-200 p-6 dark:border-gray-700">
-          <p className="leading-6 text-gray-700 dark:text-gray-200">
-            What&apos;s next?
-          </p>
-          <ul>
-            {resources.map(({ href, text, icon }) => (
-              <li key={href}>
-                <a
-                  className="group flex items-center gap-3 self-stretch p-3 leading-normal text-blue-700 hover:underline dark:text-blue-500"
-                  href={href}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {icon}
-                  {text}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
+    <div className="p-4">
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Welcome, {user.username}!</h1>
+        <Form action="/logout" method="post">
+          <button
+            type="submit"
+            className="flex items-center gap-2 rounded-lg bg-light-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-light-accent/90 retro:bg-retro-accent retro:hover:bg-retro-accent/90 multi:bg-multi-accent multi:hover:bg-multi-accent/90 dark:bg-dark-accent dark:hover:bg-dark-accent/90"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M3 3a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H3zm11 4.414L11.414 5H15v2.586zM5 7.414L7.586 5H5v2.414zM15 15H5V5h2.586L10 7.414 12.414 5H15v10z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Sign Out
+          </button>
+        </Form>
+      </div>
+
+      <div className="flex items-center justify-center">
+        <div className="flex flex-col items-center gap-16">
+          {' '}
+          <header className="flex flex-col items-center gap-9">
+            <h1 className="leading text-2xl font-bold text-gray-800 dark:text-gray-100">
+              Welcome to <span className="sr-only">Remix</span>
+            </h1>
+            <ThemeSwitcher />
+            <div className="h-[144px] w-[434px]">
+              <img
+                src="/logo-light.png"
+                alt="Remix"
+                className="block w-full dark:hidden"
+              />
+              <img
+                src="/logo-dark.png"
+                alt="Remix"
+                className="hidden w-full dark:block"
+              />
+            </div>
+          </header>
+          <nav className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-gray-200 p-6 dark:border-gray-700">
+            <p className="leading-6 text-gray-700 dark:text-gray-200">
+              What&apos;s next?
+            </p>
+            <ul>
+              {resources.map(({ href, text, icon }) => (
+                <li key={href}>
+                  <a
+                    className="group flex items-center gap-3 self-stretch p-3 leading-normal text-blue-700 hover:underline dark:text-blue-500"
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {icon}
+                    {text}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
       </div>
     </div>
   );
@@ -55,8 +95,8 @@ export default function Index() {
 
 const resources = [
   {
-    href: "https://remix.run/start/quickstart",
-    text: "Quick Start (5 min)",
+    href: 'https://remix.run/start/quickstart',
+    text: 'Quick Start (5 min)',
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -76,8 +116,8 @@ const resources = [
     ),
   },
   {
-    href: "https://remix.run/start/tutorial",
-    text: "Tutorial (30 min)",
+    href: 'https://remix.run/start/tutorial',
+    text: 'Tutorial (30 min)',
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -97,8 +137,8 @@ const resources = [
     ),
   },
   {
-    href: "https://remix.run/docs",
-    text: "Remix Docs",
+    href: 'https://remix.run/docs',
+    text: 'Remix Docs',
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -117,8 +157,8 @@ const resources = [
     ),
   },
   {
-    href: "https://rmx.as/discord",
-    text: "Join Discord",
+    href: 'https://rmx.as/discord',
+    text: 'Join Discord',
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"

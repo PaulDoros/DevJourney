@@ -2,4 +2,15 @@ node_modules
 
 /.cache
 /build
+/public/build
 .env
+.env.local
+.DS_Store
+pnpm-debug.log
+.pnpm-store/
+
+# IDE
+.idea
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
