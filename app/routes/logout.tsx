@@ -4,9 +4,8 @@ import { createServerSupabase } from '~/utils/supabase';
 export async function action({ request }: ActionFunctionArgs) {
   const response = new Response();
   const supabase = createServerSupabase(request);
-
   // Sign out from Supabase
-  await supabase.auth.signOut();
+  await supabase.supabase.auth.signOut();
 
   // Clear session cookie
   response.headers.append(
