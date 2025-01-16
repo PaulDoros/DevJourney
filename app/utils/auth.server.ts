@@ -4,6 +4,7 @@ import { supabase } from './supabase.server'; // Supabase client instance
 import type { Achievement, User } from '~/types/user'; // TypeScript types
 import { createClient } from '@supabase/supabase-js';
 import { getEnvVars } from './env.server'; // Add this import
+import { createServerSupabase } from '~/utils/supabase';
 
 // Session management configuration
 // Cookies are small pieces of data stored in the browser that help maintain state
@@ -28,80 +29,26 @@ export async function getSession(request: Request) {
 
 // Get user from session
 export async function getUserFromSession(request: Request) {
+  const userId = await getUserId(request);
+  if (!userId) return null;
+
+  const { supabase } = createServerSupabase(request);
+
   try {
-    const session = await getSession(request);
-    const userId = session.get('userId');
-
-    console.log('Attempting to fetch user with ID:', userId);
-
-    if (!userId) {
-      console.log('No userId in session');
-      return null;
-    }
-
-    const env = getEnvVars(); // Get environment variables
-
-    // Use service role client for admin access
-    const adminClient = createClient(
-      env.SUPABASE_URL,
-      env.SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      },
-    );
-
-    // Get the user profile directly from the users table
-    const { data: user, error: profileError } = await adminClient
+    const { data: user, error } = await supabase
       .from('users')
       .select('*')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
-    if (profileError) {
-      console.error('Profile fetch error:', profileError);
-
-      // Get the current auth session
-      const {
-        data: { session: authSession },
-        error: authError,
-      } = await supabase.auth.getSession();
-
-      if (authError || !authSession?.user) {
-        console.error('Auth session error:', authError);
-        return null;
-      }
-
-      // If profile doesn't exist but auth is valid, create it
-      const { data: newUser, error: insertError } = await adminClient
-        .from('users')
-        .insert([
-          {
-            id: userId,
-            email: authSession.user.email,
-            username:
-              authSession.user.email?.split('@')[0] || `user-${Date.now()}`,
-            is_guest: false,
-            points: 0,
-            achievements: [],
-          },
-        ])
-        .select('*')
-        .single();
-
-      if (insertError) {
-        console.error('Failed to create profile:', insertError);
-        return null;
-      }
-
-      return newUser;
+    if (error) {
+      console.error('Profile fetch error:', error);
+      return null;
     }
 
     return user;
   } catch (error) {
-    console.error('Session error:', error);
+    console.error('Auth session error:', error);
     return null;
   }
 }
@@ -279,4 +226,12 @@ export async function addAchievement(userId: string, achievement: Achievement) {
 
   if (error) throw error;
   return data;
+}
+
+// Add this function to get userId from session
+export async function getUserId(request: Request) {
+  const session = await getSession(request);
+  const userId = session.get('userId');
+  if (!userId) return null;
+  return userId;
 }

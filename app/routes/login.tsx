@@ -4,7 +4,13 @@ import {
   redirect,
   type ActionFunctionArgs,
 } from '@remix-run/node';
-import { Form, useActionData, useNavigation, Link } from '@remix-run/react';
+import {
+  Form,
+  useActionData,
+  useNavigation,
+  Link,
+  useLoaderData,
+} from '@remix-run/react';
 import { Card } from '~/components/ui/Card';
 import { ThemeSwitcher } from '~/components/ThemeSwitcher';
 import { createServerSupabase } from '~/utils/supabase';
@@ -50,17 +56,32 @@ export async function action({ request }: ActionFunctionArgs) {
     );
   }
 
-  const supabase = createServerSupabase(request);
+  const { supabase, response } = createServerSupabase(request);
+
+  // Add this: Create admin client for privileged operations
+  const env = getEnvVars();
+  const adminClient = createClient(
+    env.SUPABASE_URL,
+    env.SUPABASE_SERVICE_ROLE_KEY,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    },
+  );
 
   try {
     // Handle social logins
-    if (['github', 'google'].includes(intent.toString())) {
+    if (['git', 'google'].includes(intent.toString())) {
+      const provider = intent.toString() === 'git' ? 'github' : 'google';
+
       const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: intent.toString() as 'github' | 'google',
+        provider,
         options: {
           redirectTo: `${process.env.PUBLIC_URL || 'http://localhost:3000'}/auth/callback`,
           queryParams:
-            intent.toString() === 'google'
+            provider === 'google'
               ? {
                   access_type: 'offline',
                   prompt: 'consent',
@@ -68,8 +89,17 @@ export async function action({ request }: ActionFunctionArgs) {
               : undefined,
         },
       });
+
       if (error) throw error;
-      return redirect(data.url);
+      if (!data?.url) throw new Error('No OAuth URL returned');
+
+      // Return response with cookies
+      const redirectResponse = redirect(data.url.toString());
+      const cookieHeader = response.headers.get('Set-Cookie');
+      if (cookieHeader) {
+        redirectResponse.headers.append('Set-Cookie', cookieHeader);
+      }
+      return redirectResponse;
     }
 
     // Handle email/password auth
@@ -86,6 +116,11 @@ export async function action({ request }: ActionFunctionArgs) {
         {
           email,
           password,
+          options: {
+            data: {
+              username: email.split('@')[0],
+            },
+          },
         },
       );
 
@@ -95,58 +130,10 @@ export async function action({ request }: ActionFunctionArgs) {
       // Create user profile in our database
       const { data: user, error: profileError } = await supabase
         .from('users')
-        .insert([
+        .upsert(
           {
             id: authData.user.id,
             email: authData.user.email,
-            username: email.split('@')[0],
-            is_guest: false,
-          },
-        ])
-        .select()
-        .single();
-
-      if (profileError) throw profileError;
-
-      return json<ActionData>({ message: 'Account created successfully!' });
-    } else {
-      // Handle signin
-      const { data: signInData, error: signInError } =
-        await supabase.auth.signInWithPassword({ email, password });
-
-      if (signInError) throw signInError;
-      if (!signInData.user) throw new Error('No user returned from signin');
-
-      const env = getEnvVars();
-
-      console.log('Environment loaded:', {
-        url: env.SUPABASE_URL.slice(0, 20),
-        serviceKey: {
-          full: env.SUPABASE_SERVICE_ROLE_KEY,
-          start: env.SUPABASE_SERVICE_ROLE_KEY.slice(0, 10),
-          length: env.SUPABASE_SERVICE_ROLE_KEY.length,
-        },
-      });
-
-      // Use service role client for admin access
-      const adminClient = createClient(
-        env.SUPABASE_URL,
-        env.SUPABASE_SERVICE_ROLE_KEY,
-        {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false,
-          },
-        },
-      );
-
-      // Always try to create/update the profile
-      const { data: user, error: upsertError } = await adminClient
-        .from('users')
-        .upsert(
-          {
-            id: signInData.user.id,
-            email: signInData.user.email,
             username: email.split('@')[0],
             is_guest: false,
             points: 0,
@@ -154,21 +141,134 @@ export async function action({ request }: ActionFunctionArgs) {
           },
           { onConflict: 'id', ignoreDuplicates: false },
         )
-        .select('*')
+        .select()
         .single();
 
-      if (upsertError) {
-        throw upsertError;
+      if (profileError) throw profileError;
+
+      // If email confirmation is required
+      if (authData.user.confirmation_sent_at) {
+        return json<ActionData>({
+          message: 'Please check your email to confirm your account',
+        });
       }
 
-      return createUserSession(signInData.user.id, '/');
+      // If no confirmation required, log them in
+      const userSession = await createUserSession(authData.user.id, '/');
+      const cookieHeader = response.headers.get('Set-Cookie');
+      if (cookieHeader) {
+        userSession.headers.append('Set-Cookie', cookieHeader);
+      }
+      return userSession;
+    } else {
+      // Handle signin
+      const { data: signInData, error: signInError } =
+        await supabase.auth.signInWithPassword({ email, password });
+
+      if (signInError) {
+        console.error('Sign in error:', signInError);
+
+        // Check if user exists in auth.users with email/password
+        const { data: authData, error: authError } =
+          await adminClient.auth.admin.listUsers({
+            page: 1,
+            perPage: 100,
+          });
+
+        if (authError) {
+          console.error('Error checking auth users:', authError);
+        }
+
+        const emailPasswordUser = authData?.users?.find(
+          (user) =>
+            user.email?.toLowerCase() === email.toLowerCase() &&
+            user.app_metadata?.provider === 'email',
+        );
+
+        if (emailPasswordUser) {
+          // User exists with email/password but password might be wrong
+          return json<ActionData>(
+            { error: 'Invalid password. Please try again.' },
+            { status: 400 },
+          );
+        }
+
+        // Check if user exists with social login
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', email)
+          .maybeSingle();
+
+        if (existingUser) {
+          return json<ActionData>(
+            {
+              error:
+                'This email is registered with a social login (Google/GitHub). Please use that method to sign in.',
+            },
+            { status: 400 },
+          );
+        }
+
+        // No user found with this email at all
+        return json<ActionData>(
+          { error: 'No account found with this email. Please sign up first.' },
+          { status: 400 },
+        );
+      }
+
+      if (!signInData.user) throw new Error('No user returned from signin');
+
+      // Check if user profile exists, create if it doesn't
+      const { data: profile } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', signInData.user.id)
+        .single();
+
+      if (!profile) {
+        // Create profile if it doesn't exist
+        const { error: profileError } = await supabase
+          .from('users')
+          .insert([
+            {
+              id: signInData.user.id,
+              email: signInData.user.email,
+              username: email.split('@')[0],
+              is_guest: false,
+              points: 0,
+              achievements: [],
+            },
+          ])
+          .single();
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+          throw profileError;
+        }
+      }
+
+      // Create session and merge cookies
+      const userSession = await createUserSession(signInData.user.id, '/');
+      const cookieHeader = response.headers.get('Set-Cookie');
+      if (cookieHeader) {
+        userSession.headers.append('Set-Cookie', cookieHeader);
+      }
+
+      return userSession;
     }
   } catch (error: any) {
-    return json<ActionData>({ error: error.message }, { status: 400 });
+    console.error('Auth error:', error);
+    return json<ActionData>(
+      { error: error.message || 'An error occurred' },
+      { status: 400 },
+    );
   }
 }
 
 const SocialButtons = ({ isSubmitting }: { isSubmitting: boolean }) => {
+  const { redirectTo } = useLoaderData<typeof loader>();
+
   const socialProviders = [
     {
       name: 'google',
@@ -177,13 +277,13 @@ const SocialButtons = ({ isSubmitting }: { isSubmitting: boolean }) => {
         <svg className="h-5 w-5" viewBox="0 0 24 24">
           <path
             fill="currentColor"
-            d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 3.36 2.16 2.16 2.84 5.213 2.84 7.667 0 .76-.053 1.467-.173 2.053H12.48z"
+            d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
           />
         </svg>
       ),
     },
     {
-      name: 'github',
+      name: 'git',
       label: 'GitHub',
       icon: (
         <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -204,6 +304,7 @@ const SocialButtons = ({ isSubmitting }: { isSubmitting: boolean }) => {
           disabled={isSubmitting}
           className="w-full rounded-lg border border-gray-300 bg-light-primary px-4 py-2.5 text-sm font-medium text-light-text hover:bg-light-secondary disabled:opacity-50 retro:border-retro-text/30 retro:bg-retro-primary retro:text-retro-text retro:hover:bg-retro-secondary multi:border-white/50 multi:bg-multi-primary/60 multi:text-white multi:shadow-md multi:transition-all multi:hover:scale-105 multi:hover:bg-multi-primary/80 multi:hover:shadow-lg dark:border-gray-600 dark:bg-dark-primary dark:text-dark-text dark:hover:bg-dark-secondary"
         >
+          <input type="hidden" name="redirectTo" value={redirectTo} />
           <div className="flex items-center justify-center gap-2">
             {provider.icon}
             Continue with {provider.label}
@@ -254,7 +355,7 @@ export default function Login() {
             <div className="w-full border-t border-gray-300 retro:border-retro-text/30 multi:border-white/50 dark:border-gray-600"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="bg-light-primary px-2 text-light-text retro:bg-retro-primary retro:text-retro-text multi:bg-multi-primary/60 multi:bg-transparent multi:text-white multi:drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] dark:bg-dark-primary dark:text-dark-text">
+            <span className="bg-light-primary px-2 text-light-text retro:bg-retro-primary retro:text-retro-text multi:bg-transparent multi:text-white multi:drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] dark:bg-dark-primary dark:text-dark-text">
               or continue with email
             </span>
           </div>
