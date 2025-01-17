@@ -5,6 +5,7 @@ import type { Achievement, User } from '~/types/user'; // TypeScript types
 import { createClient } from '@supabase/supabase-js';
 import { getEnvVars } from './env.server'; // Add this import
 import { createServerSupabase } from '~/utils/supabase';
+import { createFolderStructure } from './supabase-storage.server';
 
 // Session management configuration
 // Cookies are small pieces of data stored in the browser that help maintain state
@@ -60,8 +61,6 @@ export async function createUserSession(userId: string, redirectTo: string) {
   const session = await sessionStorage.getSession();
   session.set('userId', userId);
 
-  console.log('Creating session for user:', userId); // Debug log
-
   // Set a longer session expiry (optional)
   const cookieOptions = {
     maxAge: 60 * 60 * 24 * 7, // 7 days
@@ -103,7 +102,6 @@ export async function createGuestUser() {
     }
 
     const user = insertedUser[0]; // Get the first user from the array
-    console.log('Created guest user:', user); // Debug log
 
     // Create a session for the guest user
     return createUserSession(user.id, '/');
@@ -157,6 +155,9 @@ export async function createUser(
       console.error('Profile creation error:', profileError);
       throw profileError;
     }
+
+    // Create storage folder structure for the new user
+    await createFolderStructure(user.id);
 
     return user;
   } catch (error) {

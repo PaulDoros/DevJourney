@@ -55,8 +55,8 @@ export const links: LinksFunction = () => [
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUserFromSession(request);
-  console.log('Root loader - user:', user); // Debug log
-  return json({ user });
+
+  return Response.json({ user });
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {

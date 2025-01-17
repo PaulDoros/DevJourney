@@ -7,7 +7,7 @@ import { UserAvatar } from '~/components/UserAvatar';
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUser(request);
-  return json({ user });
+  return Response.json({ user });
 }
 
 export default function Profile() {

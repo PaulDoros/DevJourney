@@ -14,4 +14,5 @@ export type User = {
   achievements: Achievement[];
   created_at: string;
   avatar_url: string | null;
+  social_avatar_url?: string | null;
 };

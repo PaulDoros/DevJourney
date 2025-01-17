@@ -33,7 +33,7 @@ export const AnimatedAvatar = ({
 
   return (
     <div
-      className={` ${className} ${size} max-h-60 max-w-52 overflow-hidden rounded-full`}
+      className={` ${className} ${size} max-h-60 max-w-60 overflow-hidden rounded-full`}
     >
       <LottiePlayer
         src={url}

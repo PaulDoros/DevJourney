@@ -11,7 +11,8 @@
     "start": "remix-serve ./build/server/index.js",
     "typecheck": "tsc",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,css,md,json}\"",
-    "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,css,md,json}\""
+    "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,css,md,json}\"",
+    "upload-avatars": "tsx scripts/upload-preset-avatars.ts"
   },
   "dependencies": {
     "@dotlottie/react-player": "^1.6.19",
@@ -45,6 +46,7 @@
     "@typescript-eslint/eslint-plugin": "^8.20.0",
     "@typescript-eslint/parser": "^8.20.0",
     "autoprefixer": "^10.4.19",
+    "dotenv": "^16.4.7",
     "eslint": "^9.0.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "^3.6.1",
@@ -58,6 +60,7 @@
     "prettier-plugin-tailwindcss": "^0.6.9",
     "supabase": "^2.6.8",
     "tailwindcss": "^3.4.4",
+    "tsx": "^4.19.2",
     "typescript": "~5.1.6",
     "vite": "^5.1.0",
     "vite-tsconfig-paths": "^4.2.1"
