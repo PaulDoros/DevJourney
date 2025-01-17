@@ -1,5 +1,3 @@
-'use client';
-
 import { Link } from '@remix-run/react';
 import { motion } from 'framer-motion';
 
