@@ -1,7 +1,7 @@
 import { cn } from '~/lib/utils';
 import { Link, LinkProps, Form } from '@remix-run/react';
 import React, { useState, createContext, useContext } from 'react';
-import { AnimatePresence, motion, type MotionProps } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { UserAvatar } from '~/components/UserAvatar';
 

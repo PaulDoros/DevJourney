@@ -3,12 +3,5 @@
   "installCommand": "pnpm install",
   "framework": "remix",
   "devCommand": "pnpm run dev",
-  "outputDirectory": "build/",
-  "regions": ["fra1"],
-  "functions": {
-    "build/server/index.js": {
-      "memory": 1024,
-      "maxDuration": 10
-    }
-  }
+  "outputDirectory": "build/"
 }
