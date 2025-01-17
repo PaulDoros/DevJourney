@@ -1,5 +1,3 @@
-'use client';
-
 import { cn } from '~/lib/utils';
 import { Link, LinkProps, Form } from '@remix-run/react';
 import React, { useState, createContext, useContext } from 'react';
