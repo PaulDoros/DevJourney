@@ -13,4 +13,5 @@ export type User = {
   points: number;
   achievements: Achievement[];
   created_at: string;
+  avatar_url: string | null;
 };

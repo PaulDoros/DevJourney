@@ -22,10 +22,9 @@ import { ScreenSizeIndicator } from '~/components/ScreenSizeIndicator';
 import { getErrorMessage } from '~/utils/errorMessages';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
 import { PageTransition } from './components/PageTransition';
-import { getTheme } from '~/utils/theme.server';
-import { createServerSupabase } from '~/utils/supabase';
+
 import { ToastProvider } from '~/context/ToastContext';
-import { GuestBanner } from '~/components/GuestBanner';
+
 import { getUserFromSession } from '~/utils/auth.server';
 
 // Theme blocking script
