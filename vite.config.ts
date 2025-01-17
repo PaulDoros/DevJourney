@@ -15,15 +15,24 @@ export default defineConfig({
     }),
     tsconfigPaths(),
   ],
-  server: {
-    port: 8002,
-    strictPort: true,
-    hmr: {
-      port: 8002,
+  build: {
+    sourcemap: false,
+    rollupOptions: {
+      external: ['framer-motion'],
     },
   },
+  optimizeDeps: {
+    include: ['framer-motion', 'lucide-react'],
+  },
+  ssr: {
+    noExternal: ['lucide-react'],
+  },
   resolve: {
-    // Add this to handle ESM/CJS conflicts
     mainFields: ['module', 'main'],
+    dedupe: ['framer-motion', 'react', 'react-dom', 'lucide-react'],
+  },
+  server: {
+    host: true,
+    strictPort: true,
   },
 });
