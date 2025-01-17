@@ -1,24 +1,19 @@
 // Import necessary dependencies from Remix and local files
 import { createCookieSessionStorage, redirect } from '@remix-run/node';
-import { supabase } from './supabase.server'; // Supabase client instance
-import type { Achievement, User } from '~/types/user'; // TypeScript types
-import { createClient } from '@supabase/supabase-js';
-import { getEnvVars } from './env.server'; // Add this import
+import { supabase } from './supabase.server';
+import type { Achievement, User } from '~/types/user';
 import { createServerSupabase } from '~/utils/supabase';
 import { createFolderStructure } from './supabase-storage.server';
 
-// Session management configuration
-// Cookies are small pieces of data stored in the browser that help maintain state
-// They are used here to keep track of authenticated users across requests
-// HTTP-only cookies cannot be accessed by JavaScript, making them more secure against XSS attacks
 const sessionStorage = createCookieSessionStorage({
   cookie: {
-    name: '_session', // The name of the cookie stored in the browser
-    sameSite: 'lax', // Controls how cookie is sent with cross-site requests (prevents CSRF)
-    path: '/', // The cookie will be available for all paths in the domain
-    httpOnly: true, // Makes cookie inaccessible to browser's JavaScript (security feature)
-    secrets: [process.env.SESSION_SECRET || 's3cr3t'], // Secret keys used to sign the cookie to prevent tampering
-    secure: process.env.NODE_ENV === 'production', // Cookie only sent over HTTPS in production
+    name: '_session',
+    sameSite: 'lax',
+    path: '/',
+    httpOnly: true,
+    secrets: [process.env.SESSION_SECRET || 's3cr3t'],
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 60 * 60 * 24 * 7, // 7 days
   },
 });
 
@@ -30,12 +25,11 @@ export async function getSession(request: Request) {
 
 // Get user from session
 export async function getUserFromSession(request: Request) {
-  const userId = await getUserId(request);
-  if (!userId) return null;
-
-  const { supabase } = createServerSupabase(request);
-
   try {
+    const session = await getSession(request);
+    const userId = session.get('userId');
+    if (!userId) return null;
+
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
@@ -58,19 +52,19 @@ export async function getUserFromSession(request: Request) {
 // getSession() creates or retrieves a session object that can store data
 // commitSession() serializes the session data into a cookie string
 export async function createUserSession(userId: string, redirectTo: string) {
-  const session = await sessionStorage.getSession();
-  session.set('userId', userId);
+  try {
+    const session = await sessionStorage.getSession();
+    session.set('userId', userId);
 
-  // Set a longer session expiry (optional)
-  const cookieOptions = {
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-  };
-
-  return redirect(redirectTo, {
-    headers: {
-      'Set-Cookie': await sessionStorage.commitSession(session, cookieOptions),
-    },
-  });
+    return redirect(redirectTo, {
+      headers: {
+        'Set-Cookie': await sessionStorage.commitSession(session),
+      },
+    });
+  } catch (error) {
+    console.error('Session creation error:', error);
+    throw new Error('Failed to create session');
+  }
 }
 
 // User Management Functions
@@ -233,6 +227,6 @@ export async function addAchievement(userId: string, achievement: Achievement) {
 export async function getUserId(request: Request) {
   const session = await getSession(request);
   const userId = session.get('userId');
-  if (!userId) return null;
+  if (!userId || typeof userId !== 'string') return null;
   return userId;
 }

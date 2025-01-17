@@ -10,6 +10,7 @@ import {
   useLoaderData,
   LiveReload,
   json,
+  useHydrated,
 } from '@remix-run/react';
 import type { LinksFunction, LoaderFunctionArgs } from '@remix-run/node';
 import { AnimatePresence } from 'framer-motion';
@@ -99,25 +100,44 @@ export default function App() {
 
 export function ErrorBoundary() {
   const error = useRouteError();
+  const isHydrated = useHydrated();
 
-  let errorTitle: string;
-  let errorMessage: string;
+  if (!isHydrated) {
+    return (
+      <html lang="en" className="h-full">
+        <head>
+          <meta charSet="utf-8" />
+          <meta name="viewport" content="width=device-width,initial-scale=1" />
+          <script dangerouslySetInnerHTML={{ __html: themeBlockingScript }} />
+          <Meta />
+          <Links />
+        </head>
+        <body className="h-full">
+          <div className="flex min-h-screen flex-col items-center justify-center bg-light-secondary">
+            <div className="flex w-full max-w-2xl flex-col items-center justify-center rounded-lg bg-light-primary p-8 shadow-lg">
+              <h1 className="mb-4 text-4xl font-bold text-light-accent">
+                Loading...
+              </h1>
+            </div>
+          </div>
+          <Scripts />
+        </body>
+      </html>
+    );
+  }
+
+  let errorTitle = 'Unexpected Error';
+  let errorMessage = 'An unexpected error occurred. Please try again later.';
 
   if (isRouteErrorResponse(error)) {
     const errorInfo = getErrorMessage(error.status);
     errorTitle = `${error.status} - ${errorInfo.title}`;
     errorMessage = errorInfo.description;
-
-    // If there's a specific error message from the server, append it
     if (error.data) {
       errorMessage += `\n\nDetails: ${error.data}`;
     }
-  } else {
-    errorTitle = 'Unexpected Error';
-    errorMessage =
-      error instanceof Error
-        ? error.message
-        : 'An unknown error occurred. Please try again later.';
+  } else if (error instanceof Error) {
+    errorMessage = error.message;
   }
 
   return (
@@ -131,29 +151,29 @@ export function ErrorBoundary() {
         <Links />
       </head>
       <body className="h-full">
-        <div className="flex min-h-screen flex-col items-center justify-center bg-light-secondary retro:bg-retro-secondary multi:bg-gradient-to-br multi:from-multi-gradient-1 multi:via-multi-gradient-2 multi:to-multi-gradient-3 dark:bg-dark-secondary">
-          <div className="flex w-full max-w-2xl flex-col items-center justify-center rounded-lg bg-light-primary p-8 shadow-lg retro:bg-retro-primary multi:multi-card dark:bg-dark-primary">
-            <h1 className="mb-4 text-4xl font-bold text-light-accent retro:text-retro-accent multi:multi-text-gradient dark:text-dark-accent">
-              {errorTitle}
-            </h1>
-            <p className="mb-6 text-center text-light-text retro:text-retro-text multi:text-black dark:text-dark-text">
-              {errorMessage}
-            </p>
-            {isRouteErrorResponse(error) && error.status === 404 && (
+        <ThemeProvider>
+          <div className="flex min-h-screen flex-col items-center justify-center bg-light-secondary retro:bg-retro-secondary multi:bg-gradient-to-br multi:from-multi-gradient-1 multi:via-multi-gradient-2 multi:to-multi-gradient-3 dark:bg-dark-secondary">
+            <div className="flex w-full max-w-2xl flex-col items-center justify-center rounded-lg bg-light-primary p-8 shadow-lg retro:bg-retro-primary multi:multi-card dark:bg-dark-primary">
+              <h1 className="mb-4 text-4xl font-bold text-light-accent retro:text-retro-accent multi:multi-text-gradient dark:text-dark-accent">
+                {errorTitle}
+              </h1>
+              <p className="mb-6 text-center text-light-text retro:text-retro-text multi:text-black dark:text-dark-text">
+                {errorMessage}
+              </p>
               <div className="mt-4">
                 <a
                   href="/"
-                  className="inline-block rounded bg-light-accent from-multi-gradient-1 via-multi-gradient-2 to-multi-gradient-3 px-4 py-2 text-white transition-opacity hover:animate-gradient hover:opacity-90 retro:bg-retro-accent multi:bg-multi-gradient dark:bg-dark-accent"
+                  className="inline-block rounded bg-light-accent px-4 py-2 text-white transition-opacity hover:opacity-90"
                 >
                   Return to Home
                 </a>
               </div>
-            )}
+            </div>
+            <div className="mt-8">
+              <ThemeSwitcher />
+            </div>
           </div>
-          <div className="mt-8">
-            <ThemeSwitcher />
-          </div>
-        </div>
+        </ThemeProvider>
         <Scripts />
         <ScrollRestoration />
       </body>

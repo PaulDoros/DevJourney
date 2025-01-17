@@ -36,7 +36,10 @@
     "react-dom": "^18.2.0",
     "react-toastify": "^11.0.2",
     "tailwind-merge": "^2.6.0",
-    "tailwind-scrollbar-hide": "^2.0.0"
+    "tailwind-scrollbar-hide": "^2.0.0",
+    "@emotion/is-prop-valid": "^1.2.2",
+    "bufferutil": "^4.0.8",
+    "utf-8-validate": "^6.0.3"
   },
   "devDependencies": {
     "@remix-run/dev": "^2.15.2",
