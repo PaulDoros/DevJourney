@@ -4,6 +4,7 @@ import React, { useState, createContext, useContext } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { UserAvatar } from '~/components/UserAvatar';
+import { useHydrated } from '~/hooks/useHydrated';
 
 interface Links {
   label: string;
@@ -91,6 +92,25 @@ export const DesktopSidebar = ({
   ...props
 }: React.ComponentProps<typeof motion.div>) => {
   const { open, setOpen, animate } = useSidebar();
+  const isHydrated = useHydrated();
+
+  if (!isHydrated) {
+    return (
+      <div
+        className={cn(
+          'hidden h-full w-[300px] flex-shrink-0 border-t-0 px-4 py-4 md:flex md:flex-col',
+          'bg-light-secondary',
+          'retro:bg-retro-secondary',
+          'multi:bg-multi-primary/60 multi:backdrop-blur-sm',
+          'dark:bg-dark-secondary',
+          className,
+        )}
+      >
+        {children}
+      </div>
+    );
+  }
+
   return (
     <motion.div
       className={cn(
@@ -119,6 +139,12 @@ export const MobileSidebar = ({
   ...props
 }: React.ComponentProps<'div'>) => {
   const { open, setOpen } = useSidebar();
+  const isHydrated = useHydrated();
+
+  if (!isHydrated) {
+    return null;
+  }
+
   return (
     <>
       <div
