@@ -10,7 +10,6 @@ import {
   useLoaderData,
   LiveReload,
   json,
-  useHydrated,
 } from '@remix-run/react';
 import type { LinksFunction, LoaderFunctionArgs } from '@remix-run/node';
 import { AnimatePresence } from 'framer-motion';
@@ -27,6 +26,7 @@ import { PageTransition } from './components/PageTransition';
 import { ToastProvider } from '~/context/ToastContext';
 
 import { getUserFromSession } from '~/utils/auth.server';
+import { useHydrated } from './hooks/useHydrated';
 
 // Theme blocking script
 const themeBlockingScript = `
