@@ -1,4 +1,9 @@
-import { Form, useSubmit, useLoaderData } from '@remix-run/react';
+import {
+  Form,
+  useSubmit,
+  useLoaderData,
+  useNavigation,
+} from '@remix-run/react';
 import { UserAvatar } from '~/components/UserAvatar';
 import type { User } from '~/types/user';
 import { cn } from '~/lib/utils';
@@ -10,6 +15,8 @@ interface AvatarSettingsProps {
 
 export function AvatarSettings({ user }: AvatarSettingsProps) {
   const submit = useSubmit();
+  const navigation = useNavigation();
+  const isUploading = navigation.state === 'submitting';
   const { personalAvatars = [] } = useLoaderData<{
     personalAvatars: Array<{ url: string; name: string }>;
   }>();
@@ -52,14 +59,37 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
                   className="hidden"
                   id="avatar-upload"
                   onChange={(e) => {
-                    if (e.target.form) submit(e.target.form);
+                    if (
+                      e.target.form &&
+                      e.target.files &&
+                      e.target.files.length > 0
+                    ) {
+                      // Check file sizes before submitting
+                      const hasLargeFile = Array.from(e.target.files).some(
+                        (file) => file.size > 5 * 1024 * 1024,
+                      );
+
+                      if (hasLargeFile) {
+                        alert(
+                          'One or more files are too large. Maximum size is 5MB.',
+                        );
+                        return;
+                      }
+
+                      submit(e.target.form);
+                    }
                   }}
+                  disabled={isUploading}
                 />
                 <label
                   htmlFor="avatar-upload"
-                  className="flex cursor-pointer items-center justify-center rounded-md bg-light-accent px-4 py-2 text-sm font-medium text-white transition-all hover:scale-105 hover:bg-light-accent/90"
+                  className={cn(
+                    'flex cursor-pointer items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-white transition-all',
+                    'bg-light-accent hover:scale-105 hover:bg-light-accent/90',
+                    isUploading && 'cursor-not-allowed opacity-50',
+                  )}
                 >
-                  Upload Pictures
+                  {isUploading ? 'Uploading...' : 'Upload Pictures'}
                 </label>
               </Form>
 

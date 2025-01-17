@@ -27,44 +27,53 @@ export async function action({ request }: ActionFunctionArgs) {
 
   // Handle file upload
   if (formData.has('avatar')) {
-    const files = formData.getAll('avatar') as File[];
+    const files = formData.getAll('avatar');
     const uploadedUrls = [];
 
-    for (const file of files) {
+    for (const fileData of files) {
+      // Skip if not a file
+      if (!(fileData instanceof Blob)) continue;
+
+      const file = fileData as Blob;
+
       if (!file || file.size === 0) continue;
 
       if (file.size > 5 * 1024 * 1024) {
         return json({ error: 'File too large (max 5MB)' }, { status: 400 });
       }
 
-      // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-      if (!allowedTypes.includes(file.type)) {
-        continue;
-      }
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+      // Get the file name from the formData
+      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const filePath = `${user.id}/custom/${fileName}`;
 
-      // Upload to user's folder in Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true,
-        });
+      try {
+        // Convert blob to ArrayBuffer
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = new Uint8Array(arrayBuffer);
 
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
+        // Upload to user's folder in Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, buffer, {
+            contentType: file.type,
+            cacheControl: '3600',
+            upsert: true,
+          });
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          continue;
+        }
+
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from('avatars').getPublicUrl(filePath);
+
+        uploadedUrls.push(publicUrl);
+      } catch (error) {
+        console.error('File processing error:', error);
         continue;
       }
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from('avatars').getPublicUrl(filePath);
-
-      uploadedUrls.push(publicUrl);
     }
 
     if (uploadedUrls.length === 0) {
