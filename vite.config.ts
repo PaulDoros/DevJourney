@@ -22,9 +22,19 @@ export default defineConfig({
         sourcemapExcludeSources: true,
       },
     },
+    commonjsOptions: {
+      include: [/framer-motion/, /node_modules/],
+      transformMixedEsModules: true,
+    },
+  },
+  ssr: {
+    noExternal: ['framer-motion'],
   },
   optimizeDeps: {
     include: ['framer-motion', '@emotion/is-prop-valid'],
+    esbuildOptions: {
+      target: 'es2020',
+    },
   },
   server: {
     port: 8002,
@@ -36,8 +46,5 @@ export default defineConfig({
   resolve: {
     mainFields: ['module', 'main'],
     dedupe: ['framer-motion', 'react', 'react-dom'],
-  },
-  esbuild: {
-    logOverride: { 'this-is-undefined-in-esm': 'silent' },
   },
 });

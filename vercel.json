@@ -1,4 +1,14 @@
 {
+  "buildCommand": "pnpm run build",
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm build"
+  "framework": "remix",
+  "devCommand": "pnpm run dev",
+  "outputDirectory": "build/",
+  "regions": ["fra1"],
+  "functions": {
+    "api/**/*": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  }
 }
