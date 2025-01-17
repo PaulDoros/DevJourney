@@ -27,77 +27,62 @@ export async function action({ request }: ActionFunctionArgs) {
 
   // Handle file upload
   if (formData.has('avatar')) {
-    const file = formData.get('avatar') as File;
-    if (!file || file.size === 0) {
-      return json({ error: 'No file uploaded' }, { status: 400 });
+    const files = formData.getAll('avatar') as File[];
+    const uploadedUrls = [];
+
+    for (const file of files) {
+      if (!file || file.size === 0) continue;
+
+      if (file.size > 5 * 1024 * 1024) {
+        return json({ error: 'File too large (max 5MB)' }, { status: 400 });
+      }
+
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+      if (!allowedTypes.includes(file.type)) {
+        continue;
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+      const filePath = `${user.id}/custom/${fileName}`;
+
+      // Upload to user's folder in Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        continue;
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('avatars').getPublicUrl(filePath);
+
+      uploadedUrls.push(publicUrl);
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      return json({ error: 'File too large (max 5MB)' }, { status: 400 });
+    if (uploadedUrls.length === 0) {
+      return json(
+        { error: 'No files were uploaded successfully' },
+        { status: 400 },
+      );
     }
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-    if (!allowedTypes.includes(file.type)) {
-      return json({ error: 'Invalid file type' }, { status: 400 });
+    // Set the first uploaded image as the profile picture if user doesn't have one
+    if (!user.avatar_url) {
+      await supabase
+        .from('users')
+        .update({ avatar_url: uploadedUrls[0] })
+        .eq('id', user.id);
     }
 
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}.${fileExt}`;
-
-    // Log the path to verify its structure
-    console.log('User ID:', user.id);
-    const filePath = `${user.id}/custom/${fileName}`;
-    console.log('Upload path:', filePath);
-
-    // Get current avatar URL before updating
-    const { data: currentUser } = await supabase
-      .from('users')
-      .select('avatar_url')
-      .eq('id', user.id)
-      .single();
-
-    // Upload to user's folder in Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: true,
-      });
-
-    if (uploadError) {
-      console.error('Upload error:', uploadError);
-      console.error('Upload attempt details:', {
-        userId: user.id,
-        path: filePath,
-        fileSize: file.size,
-        fileType: file.type,
-      });
-      return json({ error: 'Upload failed' }, { status: 500 });
-    }
-
-    // Get public URL
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from('avatars').getPublicUrl(filePath);
-
-    // Delete old custom avatar if exists
-    if (currentUser?.avatar_url?.includes(`/${user.id}/custom/`)) {
-      await deleteOldAvatar(currentUser.avatar_url);
-    }
-
-    // Update user profile
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ avatar_url: publicUrl })
-      .eq('id', user.id);
-
-    if (updateError) {
-      console.error('Profile update error:', updateError);
-      return json({ error: 'Profile update failed' }, { status: 500 });
-    }
-
-    return json({ success: true, avatar_url: publicUrl });
+    return json({ success: true, avatar_urls: uploadedUrls });
   }
 
   // Handle personal avatar deletion
