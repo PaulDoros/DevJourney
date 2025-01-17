@@ -28,30 +28,22 @@ export async function getUserFromSession(request: Request) {
   try {
     const session = await getSession(request);
     const userId = session.get('userId');
-    if (!userId) {
-      console.log('No userId in session');
-      return null;
-    }
+    if (!userId) return null;
 
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
       .eq('id', userId)
-      .maybeSingle();
+      .single();
 
-    if (error) {
-      console.error('Profile fetch error:', error);
-      return null;
-    }
-
-    if (!user) {
-      console.log('No user found for userId:', userId);
+    if (error || !user) {
+      console.error('Error fetching user:', error);
       return null;
     }
 
     return user;
   } catch (error) {
-    console.error('Auth session error:', error);
+    console.error('Session error:', error);
     return null;
   }
 }
@@ -61,7 +53,6 @@ export async function getUserFromSession(request: Request) {
 // commitSession() serializes the session data into a cookie string
 export async function createUserSession(userId: string, redirectTo: string) {
   try {
-    console.log('Creating session for userId:', userId);
     const session = await sessionStorage.getSession();
     session.set('userId', userId);
 
@@ -72,7 +63,7 @@ export async function createUserSession(userId: string, redirectTo: string) {
     });
   } catch (error) {
     console.error('Session creation error:', error);
-    throw new Error('Failed to create session');
+    throw error;
   }
 }
 
@@ -239,3 +230,14 @@ export async function getUserId(request: Request) {
   if (!userId || typeof userId !== 'string') return null;
   return userId;
 }
+
+export async function destroySession(request: Request) {
+  const session = await getSession(request);
+  return redirect('/login', {
+    headers: {
+      'Set-Cookie': await sessionStorage.destroySession(session),
+    },
+  });
+}
+
+export { sessionStorage };
