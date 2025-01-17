@@ -22,10 +22,9 @@ import { ScreenSizeIndicator } from '~/components/ScreenSizeIndicator';
 import { getErrorMessage } from '~/utils/errorMessages';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
 import { PageTransition } from './components/PageTransition';
-import { getTheme } from '~/utils/theme.server';
-import { createServerSupabase } from '~/utils/supabase';
+
 import { ToastProvider } from '~/context/ToastContext';
-import { GuestBanner } from '~/components/GuestBanner';
+
 import { getUserFromSession } from '~/utils/auth.server';
 
 // Theme blocking script
@@ -56,8 +55,8 @@ export const links: LinksFunction = () => [
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUserFromSession(request);
-  console.log('Root loader - user:', user); // Debug log
-  return json({ user });
+
+  return Response.json({ user });
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
