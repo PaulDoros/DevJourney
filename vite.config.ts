@@ -29,4 +29,8 @@ export default defineConfig({
     mainFields: ['module', 'main'],
     dedupe: ['framer-motion', 'react', 'react-dom'],
   },
+  server: {
+    host: true,
+    strictPort: true,
+  },
 });
