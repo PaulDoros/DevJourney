@@ -31,31 +31,38 @@ export async function action({ request }: ActionFunctionArgs) {
     const uploadedUrls = [];
 
     for (const fileData of files) {
-      // Skip if not a file
-      if (!(fileData instanceof Blob)) continue;
-
-      const file = fileData as Blob;
-
-      if (!file || file.size === 0) continue;
-
-      if (file.size > 5 * 1024 * 1024) {
-        return json({ error: 'File too large (max 5MB)' }, { status: 400 });
-      }
-
-      // Get the file name from the formData
-      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const filePath = `${user.id}/custom/${fileName}`;
-
       try {
-        // Convert blob to ArrayBuffer
+        // Skip if not a file
+        if (!fileData || typeof fileData === 'string') continue;
+
+        // Ensure we have a proper file object
+        const file = fileData as File;
+
+        if (file.size === 0) continue;
+
+        if (file.size > 5 * 1024 * 1024) {
+          return json({ error: 'File too large (max 5MB)' }, { status: 400 });
+        }
+
+        // Get file extension from mime type
+        const mimeType = file.type;
+        let fileExt = 'jpg'; // default extension
+        if (mimeType === 'image/png') fileExt = 'png';
+        if (mimeType === 'image/gif') fileExt = 'gif';
+        if (mimeType === 'image/jpeg') fileExt = 'jpg';
+
+        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+        const filePath = `${user.id}/custom/${fileName}`;
+
+        // Read file as array buffer
         const arrayBuffer = await file.arrayBuffer();
-        const buffer = new Uint8Array(arrayBuffer);
 
         // Upload to user's folder in Supabase Storage
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('avatars')
-          .upload(filePath, buffer, {
-            contentType: file.type,
+          .upload(filePath, arrayBuffer, {
+            contentType: mimeType,
+            duplex: 'half',
             cacheControl: '3600',
             upsert: true,
           });

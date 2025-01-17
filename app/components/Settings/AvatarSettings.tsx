@@ -64,19 +64,35 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
                       e.target.files &&
                       e.target.files.length > 0
                     ) {
-                      // Check file sizes before submitting
-                      const hasLargeFile = Array.from(e.target.files).some(
-                        (file) => file.size > 5 * 1024 * 1024,
+                      // Check file sizes and types before submitting
+                      const validFiles = Array.from(e.target.files).every(
+                        (file) => {
+                          if (file.size > 5 * 1024 * 1024) {
+                            alert(
+                              'One or more files are too large. Maximum size is 5MB.',
+                            );
+                            return false;
+                          }
+
+                          const validTypes = [
+                            'image/jpeg',
+                            'image/png',
+                            'image/gif',
+                          ];
+                          if (!validTypes.includes(file.type)) {
+                            alert(
+                              'Invalid file type. Please upload only JPG, PNG, or GIF images.',
+                            );
+                            return false;
+                          }
+
+                          return true;
+                        },
                       );
 
-                      if (hasLargeFile) {
-                        alert(
-                          'One or more files are too large. Maximum size is 5MB.',
-                        );
-                        return;
+                      if (validFiles) {
+                        submit(e.target.form);
                       }
-
-                      submit(e.target.form);
                     }
                   }}
                   disabled={isUploading}
