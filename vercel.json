@@ -1,4 +1,12 @@
 {
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm build"
+  "buildCommand": "pnpm run build",
+  "framework": "remix",
+  "regions": ["fra1"],
+  "env": {
+    "SUPABASE_URL": "${SUPABASE_URL}",
+    "SUPABASE_ANON_KEY": "${SUPABASE_ANON_KEY}",
+    "SUPABASE_SERVICE_ROLE_KEY": "${SUPABASE_SERVICE_ROLE_KEY}",
+    "SESSION_SECRET": "${SESSION_SECRET}"
+  }
 }

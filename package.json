@@ -12,7 +12,8 @@
     "typecheck": "tsc",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,css,md,json}\"",
     "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,css,md,json}\"",
-    "upload-avatars": "tsx scripts/upload-preset-avatars.ts"
+    "upload-avatars": "tsx scripts/upload-preset-avatars.ts",
+    "postinstall": "remix setup node"
   },
   "dependencies": {
     "@dotlottie/react-player": "^1.6.19",

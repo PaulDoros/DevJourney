@@ -21,14 +21,20 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ['framer-motion', 'lucide-react', '@emotion/is-prop-valid'],
-    exclude: ['@remix-run/dev', '@remix-run/serve'],
+    include: [
+      'framer-motion',
+      'lucide-react',
+      '@emotion/is-prop-valid',
+      '@supabase/supabase-js',
+    ],
   },
   ssr: {
     noExternal: [
       'lucide-react',
       '@emotion/is-prop-valid',
       '@supabase/supabase-js',
+      '@supabase/auth-helpers-remix',
+      '@web3-storage/multipart-parser',
     ],
   },
   resolve: {
