@@ -23,6 +23,9 @@ export default defineConfig({
       },
     },
   },
+  optimizeDeps: {
+    include: ['framer-motion', '@emotion/is-prop-valid'],
+  },
   server: {
     port: 8002,
     strictPort: true,
@@ -31,7 +34,10 @@ export default defineConfig({
     },
   },
   resolve: {
-    // Add this to handle ESM/CJS conflicts
     mainFields: ['module', 'main'],
+    dedupe: ['framer-motion', 'react', 'react-dom'],
+  },
+  esbuild: {
+    logOverride: { 'this-is-undefined-in-esm': 'silent' },
   },
 });
