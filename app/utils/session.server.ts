@@ -18,12 +18,17 @@ const sessionStorage = createCookieSessionStorage({
 // Helper function to get the user from the session
 // This checks if a user is logged in and returns their data
 export async function getUserFromSession(request: Request) {
-  const session = await getSession(request);
-  const userId = session.get('userId');
-  if (!userId) return null;
-
   try {
+    const session = await getSession(request);
+    const userId = session.get('userId');
+    if (!userId) return null;
+
     const user = await getUserById(userId);
+    if (!user) {
+      console.log('No user found for userId:', userId);
+      return null;
+    }
+
     return user;
   } catch (error) {
     console.error('Session error:', error);
@@ -34,13 +39,19 @@ export async function getUserFromSession(request: Request) {
 // Middleware function to require authentication
 // If user isn't logged in, redirects to login page with return URL
 export async function requireUser(request: Request) {
-  const user = await getUserFromSession(request);
-  if (!user) {
-    const url = new URL(request.url);
-    const searchParams = new URLSearchParams([['redirectTo', url.pathname]]);
-    throw redirect(`/login?${searchParams}`);
+  try {
+    const user = await getUserFromSession(request);
+    if (!user) {
+      const url = new URL(request.url);
+      const searchParams = new URLSearchParams([['redirectTo', url.pathname]]);
+      throw redirect(`/login?${searchParams}`);
+    }
+    return user;
+  } catch (error) {
+    if (error instanceof Response) throw error;
+    console.error('Require user error:', error);
+    throw new Error('Authentication failed');
   }
-  return user;
 }
 
 // Helper to get the session from the request cookie

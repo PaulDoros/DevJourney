@@ -28,7 +28,10 @@ export async function getUserFromSession(request: Request) {
   try {
     const session = await getSession(request);
     const userId = session.get('userId');
-    if (!userId) return null;
+    if (!userId) {
+      console.log('No userId in session');
+      return null;
+    }
 
     const { data: user, error } = await supabase
       .from('users')
@@ -38,6 +41,11 @@ export async function getUserFromSession(request: Request) {
 
     if (error) {
       console.error('Profile fetch error:', error);
+      return null;
+    }
+
+    if (!user) {
+      console.log('No user found for userId:', userId);
       return null;
     }
 
@@ -53,6 +61,7 @@ export async function getUserFromSession(request: Request) {
 // commitSession() serializes the session data into a cookie string
 export async function createUserSession(userId: string, redirectTo: string) {
   try {
+    console.log('Creating session for userId:', userId);
     const session = await sessionStorage.getSession();
     session.set('userId', userId);
 
