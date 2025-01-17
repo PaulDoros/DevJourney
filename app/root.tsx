@@ -12,7 +12,7 @@ import {
   json,
 } from '@remix-run/react';
 import type { LinksFunction, LoaderFunctionArgs } from '@remix-run/node';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, type AnimatePresenceProps } from 'framer-motion';
 
 import './tailwind.css';
 import stylesheet from '~/styles/app.css?url';

@@ -1,5 +1,5 @@
 import { Link } from '@remix-run/react';
-import { motion } from 'framer-motion';
+import { motion, type MotionProps } from 'framer-motion';
 
 export const Logo = () => {
   return (
