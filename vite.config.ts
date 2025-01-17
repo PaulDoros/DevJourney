@@ -16,32 +16,14 @@ export default defineConfig({
     tsconfigPaths(),
   ],
   build: {
-    sourcemap: true,
+    sourcemap: false,
     rollupOptions: {
-      output: {
-        sourcemapExcludeSources: true,
-      },
+      external: ['framer-motion'],
     },
-    commonjsOptions: {
-      include: [/framer-motion/, /node_modules/],
-      transformMixedEsModules: true,
-    },
-  },
-  ssr: {
-    noExternal: ['framer-motion'],
   },
   optimizeDeps: {
-    include: ['framer-motion', '@emotion/is-prop-valid'],
-    esbuildOptions: {
-      target: 'es2020',
-    },
-  },
-  server: {
-    port: 8002,
-    strictPort: true,
-    hmr: {
-      port: 8002,
-    },
+    include: ['framer-motion'],
+    exclude: ['@emotion/is-prop-valid'],
   },
   resolve: {
     mainFields: ['module', 'main'],
