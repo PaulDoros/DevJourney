@@ -16,23 +16,30 @@ export default defineConfig({
     tsconfigPaths(),
   ],
   build: {
-    sourcemap: false,
     rollupOptions: {
       external: ['framer-motion'],
     },
   },
   optimizeDeps: {
-    include: ['framer-motion', 'lucide-react'],
+    include: ['framer-motion', 'lucide-react', '@emotion/is-prop-valid'],
+    exclude: ['@remix-run/dev', '@remix-run/serve'],
   },
   ssr: {
-    noExternal: ['lucide-react'],
+    noExternal: ['lucide-react', '@emotion/is-prop-valid'],
+    optimizeDeps: {
+      exclude: ['bufferutil', 'utf-8-validate'],
+    },
   },
   resolve: {
     mainFields: ['module', 'main'],
     dedupe: ['framer-motion', 'react', 'react-dom', 'lucide-react'],
   },
   server: {
-    host: true,
+    port: 8002,
     strictPort: true,
+    hmr: {
+      port: 8002,
+    },
   },
+
 });
