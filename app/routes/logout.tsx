@@ -1,24 +1,26 @@
-import { type ActionFunctionArgs, redirect } from '@remix-run/node';
-import { createServerSupabase } from '~/utils/supabase';
+import { redirect, type LoaderFunctionArgs } from '@remix-run/node';
+import { sessionStorage } from '~/utils/session.server';
 
-export async function action({ request }: ActionFunctionArgs) {
-  const response = new Response();
-  const supabase = createServerSupabase(request);
-  // Sign out from Supabase
-  await supabase.supabase.auth.signOut();
-
-  // Clear session cookie
-  response.headers.append(
-    'Set-Cookie',
-    '_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
+export async function loader({ request }: LoaderFunctionArgs) {
+  const session = await sessionStorage.getSession(
+    request.headers.get('Cookie'),
   );
 
   return redirect('/login', {
-    headers: response.headers,
+    headers: {
+      'Set-Cookie': await sessionStorage.destroySession(session),
+    },
   });
 }
 
-// In case someone visits /logout directly
-export async function loader() {
-  return redirect('/');
+// Add a default export to prevent empty chunk
+export default function Logout() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-xl font-semibold">Logging out...</h1>
+        <p className="text-gray-500">Please wait while we sign you out.</p>
+      </div>
+    </div>
+  );
 }
