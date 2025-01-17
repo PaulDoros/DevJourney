@@ -36,7 +36,12 @@ export async function action({ request }: ActionFunctionArgs) {
         if (!fileData || typeof fileData === 'string') continue;
 
         // Ensure we have a proper file object
-        const file = fileData as File;
+        if (!(fileData instanceof Blob)) {
+          console.error('Invalid file data:', typeof fileData);
+          continue;
+        }
+
+        const file = fileData as Blob;
 
         if (file.size === 0) continue;
 
@@ -54,29 +59,32 @@ export async function action({ request }: ActionFunctionArgs) {
         const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
         const filePath = `${user.id}/custom/${fileName}`;
 
-        // Read file as array buffer
-        const arrayBuffer = await file.arrayBuffer();
+        try {
+          // Convert to buffer for upload
+          const buffer = Buffer.from(await file.arrayBuffer());
 
-        // Upload to user's folder in Supabase Storage
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(filePath, arrayBuffer, {
-            contentType: mimeType,
-            duplex: 'half',
-            cacheControl: '3600',
-            upsert: true,
-          });
+          // Upload to user's folder in Supabase Storage
+          const { data: uploadData, error: uploadError } =
+            await supabase.storage.from('avatars').upload(filePath, buffer, {
+              contentType: mimeType,
+              cacheControl: '3600',
+              upsert: true,
+            });
 
-        if (uploadError) {
-          console.error('Upload error:', uploadError);
+          if (uploadError) {
+            console.error('Upload error:', uploadError);
+            continue;
+          }
+
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from('avatars').getPublicUrl(filePath);
+
+          uploadedUrls.push(publicUrl);
+        } catch (uploadError) {
+          console.error('Upload processing error:', uploadError);
           continue;
         }
-
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from('avatars').getPublicUrl(filePath);
-
-        uploadedUrls.push(publicUrl);
       } catch (error) {
         console.error('File processing error:', error);
         continue;
@@ -88,14 +96,6 @@ export async function action({ request }: ActionFunctionArgs) {
         { error: 'No files were uploaded successfully' },
         { status: 400 },
       );
-    }
-
-    // Set the first uploaded image as the profile picture if user doesn't have one
-    if (!user.avatar_url) {
-      await supabase
-        .from('users')
-        .update({ avatar_url: uploadedUrls[0] })
-        .eq('id', user.id);
     }
 
     return json({ success: true, avatar_urls: uploadedUrls });

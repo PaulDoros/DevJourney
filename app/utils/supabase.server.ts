@@ -3,20 +3,32 @@ import { getEnvVars } from './env.server';
 
 const env = getEnvVars();
 
-if (!env.SUPABASE_URL) throw new Error('SUPABASE_URL is required');
-if (!env.SUPABASE_ANON_KEY) throw new Error('SUPABASE_ANON_KEY is required');
-
-// Create a single supabase client for interacting with your database
+// Create a single instance for server-side operations
 export const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
   auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-  },
-  db: {
-    schema: 'public',
+    autoRefreshToken: false,
+    persistSession: false,
   },
 });
+
+// Create authenticated client for user operations
+export function createServerSupabase(request: Request) {
+  const cookies = request.headers.get('Cookie') || '';
+
+  return {
+    supabase: createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+      global: {
+        headers: {
+          cookie: cookies,
+        },
+      },
+    }),
+  };
+}
 
 // Helper function to check if a user exists
 export async function checkUserExists(userId: string) {
