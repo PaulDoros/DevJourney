@@ -22,12 +22,14 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ['framer-motion'],
-    exclude: ['@emotion/is-prop-valid'],
+    include: ['framer-motion', 'lucide-react'],
+  },
+  ssr: {
+    noExternal: ['lucide-react'],
   },
   resolve: {
     mainFields: ['module', 'main'],
-    dedupe: ['framer-motion', 'react', 'react-dom'],
+    dedupe: ['framer-motion', 'react', 'react-dom', 'lucide-react'],
   },
   server: {
     host: true,
