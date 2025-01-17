@@ -15,15 +15,30 @@ export default defineConfig({
     }),
     tsconfigPaths(),
   ],
+  build: {
+    rollupOptions: {
+      external: ['framer-motion'],
+    },
+  },
+  optimizeDeps: {
+    include: ['framer-motion', 'lucide-react', '@emotion/is-prop-valid'],
+    exclude: ['@remix-run/dev', '@remix-run/serve'],
+  },
+  ssr: {
+    noExternal: ['lucide-react', '@emotion/is-prop-valid'],
+    optimizeDeps: {
+      exclude: ['bufferutil', 'utf-8-validate'],
+    },
+  },
+  resolve: {
+    mainFields: ['module', 'main'],
+    dedupe: ['framer-motion', 'react', 'react-dom', 'lucide-react'],
+  },
   server: {
     port: 8002,
     strictPort: true,
     hmr: {
       port: 8002,
     },
-  },
-  resolve: {
-    // Add this to handle ESM/CJS conflicts
-    mainFields: ['module', 'main'],
   },
 });
