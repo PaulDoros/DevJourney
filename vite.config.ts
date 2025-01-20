@@ -1,6 +1,7 @@
 import { vitePlugin as remix } from '@remix-run/dev';
 import { defineConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
+import { vercelPreset } from '@vercel/remix/vite';
 
 export default defineConfig(({ mode }) => ({
   plugins: [
@@ -12,13 +13,14 @@ export default defineConfig(({ mode }) => ({
         v3_singleFetch: true,
         v3_lazyRouteDiscovery: true,
       },
+      presets: [vercelPreset()],
     }),
     tsconfigPaths(),
   ],
   build: {
     sourcemap: mode === 'development',
     rollupOptions: {
-      external: [],
+      external: ['utf-8-validate', 'bufferutil'],
       output: {
         manualChunks: {
           framer: ['framer-motion'],
@@ -34,7 +36,7 @@ export default defineConfig(({ mode }) => ({
       '@emotion/is-prop-valid',
       '@dotlottie/react-player',
     ],
-    exclude: ['@remix-run/react'],
+    exclude: ['@remix-run/react', 'utf-8-validate', 'bufferutil'],
     esbuildOptions: {
       target: 'es2020',
     },
