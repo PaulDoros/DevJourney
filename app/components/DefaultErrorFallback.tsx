@@ -1,9 +1,13 @@
+import { Links, Meta, Scripts } from '@remix-run/react';
+
 export function DefaultErrorFallback() {
   return (
     <html lang="en" className="h-full">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <Meta />
+        <Links />
         <title>Loading...</title>
       </head>
       <body className="h-full">
@@ -14,6 +18,7 @@ export function DefaultErrorFallback() {
             </h1>
           </div>
         </div>
+        <Scripts />
       </body>
     </html>
   );

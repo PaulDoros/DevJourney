@@ -26,7 +26,13 @@ import { DefaultErrorFallback } from './components/DefaultErrorFallback';
 import { ToastProvider } from '~/context/ToastContext';
 import { getUserFromSession } from '~/utils/auth.server';
 
-const PageTransition = lazy(() => import('./components/PageTransition'));
+// Lazy load components that use Framer Motion
+const PageTransition = lazy(() =>
+  import('./components/PageTransition').then((mod) => ({
+    default: mod.PageTransition,
+  })),
+);
+
 const AnimatePresence = lazy(() =>
   import('framer-motion').then((mod) => ({
     default: mod.AnimatePresence,
