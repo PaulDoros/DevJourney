@@ -1,12 +1,4 @@
 {
-  "installCommand": "pnpm install",
-  "buildCommand": "pnpm run build",
-  "framework": "remix",
-  "regions": ["fra1"],
-  "env": {
-    "SUPABASE_URL": "https://ypouzqmzzwyxymasbkco.supabase.co",
-    "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlwb3V6cW16end5eHltYXNia2NvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NDQwNTEsImV4cCI6MjA1MjQyMDA1MX0.m4yl3vsnJjO2IDPfzy_5-uR0vUUsF3LyUL1LBmAwF8Q",
-    "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlwb3V6cW16end5eHltYXNia2NvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNjg0NDA1MSwiZXhwIjoyMDUyNDIwMDUxfQ.XLX_rb5vPZSosuaS-lLRT3XPw7zW2BywxK-Z3CRTf9o",
-    "SESSION_SECRET": "6e3d33d08ee8288d7e4e29d3887e3688bfbeaf9c62370c8831d627fa64aae711"
-  }
+  "installCommand": "pnpm install --no-frozen-lockfile",
+  "buildCommand": "pnpm build"
 }
