@@ -2,7 +2,6 @@ import { defineConfig } from 'vite';
 import { vitePlugin as remix } from '@remix-run/dev';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { vercelPreset } from '@vercel/remix/vite';
-import { resolve } from 'path';
 
 declare module '@remix-run/node' {
   interface Future {
@@ -44,20 +43,25 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ['framer-motion', 'lucide-react', '@emotion/is-prop-valid'],
+    include: [
+      'framer-motion',
+      'lucide-react',
+      '@emotion/is-prop-valid',
+      '@dotlottie/react-player',
+    ],
   },
   ssr: {
-    noExternal: ['framer-motion', 'lucide-react', '@emotion/is-prop-valid'],
+    noExternal: [
+      'framer-motion',
+      'lucide-react',
+      '@emotion/is-prop-valid',
+      '@dotlottie/react-player',
+    ],
   },
   resolve: {
-    mainFields: ['module', 'main'],
-    dedupe: ['framer-motion', 'react', 'react-dom', 'lucide-react'],
-    alias: [
-      {
-        find: '~',
-        replacement: resolve(__dirname, './app'),
-      },
-    ],
+    alias: {
+      '~': '/app',
+    },
   },
   server: {
     port: Number(process.env.PORT) || 3000,
