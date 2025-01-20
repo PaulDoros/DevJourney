@@ -58,7 +58,7 @@ export const UserAvatar = ({
       className={cn(
         'relative flex-shrink-0 overflow-hidden rounded-full',
         sizeClasses[size],
-        'bg-light-secondary',
+        'a bg-light-secondary',
         'retro:bg-retro-secondary',
         'multi:bg-multi-primary/60',
         'dark:bg-dark-secondary',
