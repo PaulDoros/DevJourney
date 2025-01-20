@@ -3,18 +3,7 @@ import { defineConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
-  plugins: [
-    remix({
-      future: {
-        v3_fetcherPersist: true,
-        v3_lazyRouteDiscovery: true,
-        v3_relativeSplatPath: true,
-        v3_singleFetch: true,
-        v3_throwAbortReason: true,
-      },
-    }),
-    tsconfigPaths(),
-  ],
+  plugins: [remix(), tsconfigPaths()],
   build: {
     rollupOptions: {
       external: ['framer-motion'],
@@ -25,11 +14,7 @@ export default defineConfig({
     exclude: ['@remix-run/dev', '@remix-run/serve'],
   },
   ssr: {
-    noExternal: [
-      'lucide-react',
-      '@emotion/is-prop-valid',
-      '@supabase/supabase-js',
-    ],
+    noExternal: ['framer-motion', 'lucide-react', '@emotion/is-prop-valid'],
   },
   resolve: {
     mainFields: ['module', 'main'],
