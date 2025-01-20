@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
-  plugins: [remix()],
+  plugins: [remix(), tsconfigPaths()],
   build: {
     rollupOptions: {
       external: [],
@@ -14,9 +14,6 @@ export default defineConfig({
   },
   ssr: {
     noExternal: ['framer-motion', 'lucide-react', '@emotion/is-prop-valid'],
-    optimizeDeps: {
-      disabled: false,
-    },
   },
   resolve: {
     mainFields: ['module', 'main'],
