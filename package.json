@@ -29,6 +29,8 @@
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.47.13",
     "@types/react-transition-group": "^4.4.12",
+    "@vercel/remix": "^2.15.2",
+    "bufferutil": "^4.0.8",
     "clsx": "^2.1.1",
     "framer-motion": "^11.17.1",
     "isbot": "^4.1.0",
@@ -39,8 +41,6 @@
     "react-toastify": "^11.0.2",
     "tailwind-merge": "^2.6.0",
     "tailwind-scrollbar-hide": "^2.0.0",
-    "@emotion/is-prop-valid": "^1.2.2",
-    "bufferutil": "^4.0.8",
     "utf-8-validate": "^6.0.3"
   },
   "devDependencies": {
@@ -71,6 +71,6 @@
     "vite-tsconfig-paths": "^4.2.1"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "20.x"
   }
 }
