@@ -3,6 +3,7 @@ import {
   useSubmit,
   useLoaderData,
   useNavigation,
+  useFetcher,
 } from '@remix-run/react';
 import { UserAvatar } from '~/components/UserAvatar';
 import type { User } from '~/types/user';
@@ -14,7 +15,7 @@ interface AvatarSettingsProps {
 }
 
 export function AvatarSettings({ user }: AvatarSettingsProps) {
-  const submit = useSubmit();
+  const fetcher = useFetcher();
   const navigation = useNavigation();
   const isUploading = navigation.state === 'submitting';
   const { personalAvatars = [] } = useLoaderData<{
@@ -50,7 +51,7 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
             </p>
 
             <div className="flex flex-wrap gap-3">
-              <Form
+              <fetcher.Form
                 method="post"
                 encType="multipart/form-data"
                 action="/actions/settings"
@@ -64,23 +65,8 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
                   className="hidden"
                   id="avatar-upload"
                   onChange={(e) => {
-                    if (
-                      e.target.form &&
-                      e.target.files &&
-                      e.target.files.length > 0
-                    ) {
-                      const hasLargeFile = Array.from(e.target.files).some(
-                        (file) => file.size > 5 * 1024 * 1024,
-                      );
-
-                      if (hasLargeFile) {
-                        alert(
-                          'One or more files are too large. Maximum size is 5MB.',
-                        );
-                        return;
-                      }
-
-                      submit(e.target.form);
+                    if (e.target.form && e.target.files?.length) {
+                      fetcher.submit(e.target.form);
                     }
                   }}
                   disabled={isUploading}
@@ -95,19 +81,17 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
                 >
                   {isUploading ? 'Uploading...' : 'Upload Pictures'}
                 </label>
-              </Form>
+              </fetcher.Form>
 
-              {user.avatar_url && (
-                <Form method="post" action="/actions/settings">
-                  <input type="hidden" name="action" value="remove-avatar" />
-                  <button
-                    type="submit"
-                    className="rounded-md bg-red-500 px-4 py-2 text-sm font-medium text-white transition-all hover:scale-105 hover:bg-red-600"
-                  >
-                    Remove Current Picture
-                  </button>
-                </Form>
-              )}
+              <fetcher.Form method="post" action="/actions/settings">
+                <input type="hidden" name="action" value="remove-avatar" />
+                <button
+                  type="submit"
+                  className="rounded-md bg-red-500 px-4 py-2 text-sm font-medium text-white"
+                >
+                  Remove Current Picture
+                </button>
+              </fetcher.Form>
             </div>
           </div>
         </div>
@@ -125,7 +109,7 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
                     className="h-full w-full rounded-lg object-cover"
                   />
                   <div className="absolute inset-0 flex items-center justify-center gap-2 rounded-lg bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                    <Form method="post" action="/actions/settings">
+                    <fetcher.Form method="post" action="/actions/settings">
                       <input
                         type="hidden"
                         name="action"
@@ -155,8 +139,8 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
                           />
                         </svg>
                       </button>
-                    </Form>
-                    <Form method="post" action="/actions/settings">
+                    </fetcher.Form>
+                    <fetcher.Form method="post" action="/actions/settings">
                       <input
                         type="hidden"
                         name="action"
@@ -186,7 +170,7 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
                           />
                         </svg>
                       </button>
-                    </Form>
+                    </fetcher.Form>
                   </div>
                 </div>
               ))}
@@ -207,7 +191,7 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
               </h4>
               <div className="grid grid-cols-4 gap-4 sm:grid-cols-6 md:grid-cols-8">
                 {ANIMATED_AVATARS.map((avatar) => (
-                  <Form
+                  <fetcher.Form
                     key={avatar.id}
                     method="post"
                     action="/actions/settings"
@@ -226,7 +210,7 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
                         size="md"
                       />
                     </button>
-                  </Form>
+                  </fetcher.Form>
                 ))}
               </div>
             </div>
@@ -237,7 +221,7 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
               </h4>
               <div className="grid grid-cols-4 gap-4 sm:grid-cols-6 md:grid-cols-8">
                 {STATIC_AVATARS.map((avatar) => (
-                  <Form
+                  <fetcher.Form
                     key={avatar.id}
                     method="post"
                     action="/actions/settings"
@@ -256,7 +240,7 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
                         className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-110"
                       />
                     </button>
-                  </Form>
+                  </fetcher.Form>
                 ))}
               </div>
             </div>

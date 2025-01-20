@@ -66,11 +66,11 @@ export async function action({ request }: ActionFunctionArgs) {
       .eq('id', user.id)
       .single();
 
-    if (currentUser?.avatar_url?.includes(avatarName)) {
-      await supabase
-        .from('users')
-        .update({ avatar_url: null })
-        .eq('id', user.id);
+    if (
+      currentUser?.avatar_url &&
+      currentUser.avatar_url.includes('/avatars/custom/')
+    ) {
+      await deleteOldAvatar(currentUser.avatar_url);
     }
 
     return json({ success: true });
@@ -87,7 +87,10 @@ export async function action({ request }: ActionFunctionArgs) {
       .eq('id', user.id)
       .single();
 
-    if (currentUser?.avatar_url?.includes('/avatars/custom/')) {
+    if (
+      currentUser?.avatar_url &&
+      currentUser.avatar_url.includes('/avatars/custom/')
+    ) {
       await deleteOldAvatar(currentUser.avatar_url);
     }
 
@@ -112,7 +115,10 @@ export async function action({ request }: ActionFunctionArgs) {
       .eq('id', user.id)
       .single();
 
-    if (currentUser?.avatar_url?.includes('/avatars/custom/')) {
+    if (
+      currentUser?.avatar_url &&
+      currentUser.avatar_url.includes('/avatars/custom/')
+    ) {
       await deleteOldAvatar(currentUser.avatar_url);
     }
 
