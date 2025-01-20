@@ -11,7 +11,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const redirectTo = url.searchParams.get('redirectTo') || '/';
 
-  return json({ redirectTo });
+  return { redirectTo };
 }
 
 export default function Login() {
