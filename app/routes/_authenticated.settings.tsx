@@ -5,7 +5,7 @@ import { useLoaderData } from '@remix-run/react';
 import { LoaderFunctionArgs, json, ActionFunctionArgs } from '@remix-run/node';
 import { requireUser } from '~/utils/session.server';
 import { AvatarSettings } from '~/components/Settings/AvatarSettings';
-
+import { supabase } from '~/utils/supabase.server';
 import {
   getUserAvatars,
   deleteOldAvatar,
@@ -15,9 +15,7 @@ import { createServerSupabase } from '~/utils/supabase';
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUser(request);
   const personalAvatars = await getUserAvatars(user.id);
-
-  // Return data object directly
-  return { user, personalAvatars };
+  return Response.json({ user, personalAvatars });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
