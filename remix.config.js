@@ -1,16 +1,18 @@
 /** @type {import('@remix-run/dev').AppConfig} */
-export default {
+module.exports = {
+  ignoredRouteFiles: ['**/.*'],
+  serverModuleFormat: 'esm',
+  dev: {
+    port: process.env.PORT || 3000,
+    hmr: {
+      port: process.env.WEBSOCKET_PORT || 8002,
+    },
+  },
   future: {
     v3_fetcherPersist: true,
     v3_relativeSplatPath: true,
     v3_throwAbortReason: true,
     v3_singleFetch: true,
     v3_lazyRouteDiscovery: true,
-  },
-  ignoredRouteFiles: ['**/.*'],
-  serverModuleFormat: 'esm',
-  dev: {
-    port: 8002,
-    rebuildPollIntervalMs: 3000,
   },
 };
