@@ -1,4 +1,6 @@
 {
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm build"
+  "buildCommand": "pnpm build",
+  "framework": "vite",
+  "outputDirectory": "build/client"
 }
