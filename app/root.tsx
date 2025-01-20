@@ -12,7 +12,7 @@ import {
   json,
 } from '@remix-run/react';
 import type { LinksFunction, LoaderFunctionArgs } from '@remix-run/node';
-import { AnimatePresence } from 'framer-motion';
+import { lazy, Suspense } from 'react';
 
 import './tailwind.css';
 import stylesheet from '~/styles/app.css?url';
@@ -21,11 +21,17 @@ import { ThemeProvider, NonFlashOfWrongThemeEls } from './utils/theme-provider';
 import { ScreenSizeIndicator } from '~/components/ScreenSizeIndicator';
 import { getErrorMessage } from '~/utils/errorMessages';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
-import { PageTransition } from './components/PageTransition';
+import { DefaultErrorFallback } from './components/DefaultErrorFallback';
 
 import { ToastProvider } from '~/context/ToastContext';
-
 import { getUserFromSession } from '~/utils/auth.server';
+
+const PageTransition = lazy(() => import('./components/PageTransition'));
+const AnimatePresence = lazy(() =>
+  import('framer-motion').then((mod) => ({
+    default: mod.AnimatePresence,
+  })),
+);
 
 // Theme blocking script
 const themeBlockingScript = `
@@ -89,11 +95,13 @@ export default function App() {
   const location = useLocation();
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <PageTransition key={location.pathname}>
-        <Outlet />
-      </PageTransition>
-    </AnimatePresence>
+    <Suspense fallback={<DefaultErrorFallback />}>
+      <AnimatePresence mode="wait" initial={false}>
+        <PageTransition key={location.pathname}>
+          <Outlet />
+        </PageTransition>
+      </AnimatePresence>
+    </Suspense>
   );
 }
 

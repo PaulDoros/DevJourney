@@ -2,7 +2,7 @@ import { vitePlugin as remix } from '@remix-run/dev';
 import { defineConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     remix({
       future: {
@@ -11,15 +11,21 @@ export default defineConfig({
         v3_throwAbortReason: true,
         v3_singleFetch: true,
         v3_lazyRouteDiscovery: true,
-      }
-    }), 
-    tsconfigPaths()
+      },
+    }),
+    tsconfigPaths(),
   ],
   build: {
+    sourcemap: mode === 'development',
     rollupOptions: {
       external: [],
+      output: {
+        manualChunks: {
+          framer: ['framer-motion'],
+          lottie: ['@dotlottie/react-player'],
+        },
+      },
     },
-    sourcemap: true
   },
   optimizeDeps: {
     include: [
@@ -29,6 +35,9 @@ export default defineConfig({
       '@dotlottie/react-player',
     ],
     exclude: ['@remix-run/react'],
+    esbuildOptions: {
+      target: 'es2020',
+    },
   },
   ssr: {
     noExternal: [
@@ -37,15 +46,18 @@ export default defineConfig({
       '@emotion/is-prop-valid',
       '@dotlottie/react-player',
     ],
+    target: 'node',
+    format: 'esm',
   },
   resolve: {
     alias: {
       '~': '/app',
     },
+    mainFields: ['module', 'main', 'browser'],
   },
   server: {
     fs: {
-      strict: true
-    }
-  }
-});
+      strict: true,
+    },
+  },
+}));

@@ -1,6 +1,18 @@
 {
   "installCommand": "pnpm install",
   "buildCommand": "pnpm build",
-  "framework": "vite",
-  "outputDirectory": "build/client"
+  "framework": "remix",
+  "regions": ["iad1"],
+  "outputDirectory": "build/client",
+  "headers": [
+    {
+      "source": "/build/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
 }
