@@ -9,10 +9,10 @@ import {
   useLocation,
   useLoaderData,
   LiveReload,
-  json,
 } from '@remix-run/react';
 import type { LinksFunction, LoaderFunctionArgs } from '@remix-run/node';
 import { AnimatePresence } from 'framer-motion';
+import { json } from '@remix-run/node';
 
 import './tailwind.css';
 import stylesheet from '~/styles/app.css?url';
@@ -56,8 +56,7 @@ export const links: LinksFunction = () => [
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUserFromSession(request);
-
-  return Response.json({ user });
+  return { user };
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
