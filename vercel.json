@@ -12,7 +12,7 @@
     }
   },
   "ignoreCommand": "git diff HEAD^ HEAD --quiet ./",
-  "installCommand": "pnpm install --no-frozen-lockfile",
+  "installCommand": "pnpm install",
   "buildCommand": "pnpm build",
   "framework": "remix",
   "outputDirectory": "build/client",
@@ -24,11 +24,21 @@
       }
     },
     {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/.*",
+      "src": "/(.*)",
       "dest": "server/index.js"
     }
-  ]
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "deploymentMetadata": {
+    "version": 2,
+    "deploymentId": true,
+    "buildCommand": true,
+    "buildTimestamp": true,
+    "debug": true
+  },
+  "logDrains": {
+    "enabled": true
+  }
 }

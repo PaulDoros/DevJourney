@@ -11,112 +11,184 @@ import {
   deleteOldAvatar,
 } from '~/utils/supabase-storage.server';
 import { createServerSupabase } from '~/utils/supabase';
+import { debugLog, errorLog } from '~/utils/debug.server';
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const user = await requireUser(request);
-  const personalAvatars = await getUserAvatars(user.id);
-  return Response.json({ user, personalAvatars });
+  try {
+    debugLog('Settings loader started', { url: request.url });
+    const user = await requireUser(request);
+    debugLog('User loaded', { userId: user.id });
+    const personalAvatars = await getUserAvatars(user.id);
+    return Response.json({ user, personalAvatars });
+  } catch (error) {
+    errorLog(error, 'Settings Loader');
+    throw error;
+  }
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-  const user = await requireUser(request);
-  const formData = await request.formData();
+  try {
+    debugLog('Settings action started', {
+      method: request.method,
+      url: request.url,
+    });
+    const user = await requireUser(request);
+    const formData = await request.formData();
 
-  // Get authenticated client
-  const { supabase } = createServerSupabase(request);
+    // Get authenticated client
+    const { supabase } = createServerSupabase(request);
 
-  // Handle file upload
-  if (formData.has('avatar')) {
-    const files = formData.getAll('avatar');
-    const uploadedUrls = [];
+    // Handle file upload
+    if (formData.has('avatar')) {
+      const files = formData.getAll('avatar');
+      const uploadedUrls = [];
 
-    for (const fileData of files) {
-      // Skip if not a file
-      if (!(fileData instanceof Blob)) continue;
+      for (const fileData of files) {
+        // Skip if not a file
+        if (!(fileData instanceof Blob)) continue;
 
-      const file = fileData as Blob;
+        const file = fileData as Blob;
 
-      if (!file || file.size === 0) continue;
+        if (!file || file.size === 0) continue;
 
-      if (file.size > 5 * 1024 * 1024) {
-        return json({ error: 'File too large (max 5MB)' }, { status: 400 });
-      }
-
-      // Get the file name from the formData
-      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const filePath = `${user.id}/custom/${fileName}`;
-
-      try {
-        // Convert blob to ArrayBuffer
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = new Uint8Array(arrayBuffer);
-
-        // Upload to user's folder in Supabase Storage
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(filePath, buffer, {
-            contentType: file.type,
-            cacheControl: '3600',
-            upsert: true,
-          });
-
-        if (uploadError) {
-          console.error('Upload error:', uploadError);
-          continue;
+        if (file.size > 5 * 1024 * 1024) {
+          return json({ error: 'File too large (max 5MB)' }, { status: 400 });
         }
 
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from('avatars').getPublicUrl(filePath);
+        // Get the file name from the formData
+        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const filePath = `${user.id}/custom/${fileName}`;
 
-        uploadedUrls.push(publicUrl);
-      } catch (error) {
-        console.error('File processing error:', error);
-        continue;
+        try {
+          // Convert blob to ArrayBuffer
+          const arrayBuffer = await file.arrayBuffer();
+          const buffer = new Uint8Array(arrayBuffer);
+
+          // Upload to user's folder in Supabase Storage
+          const { data: uploadData, error: uploadError } =
+            await supabase.storage.from('avatars').upload(filePath, buffer, {
+              contentType: file.type,
+              cacheControl: '3600',
+              upsert: true,
+            });
+
+          if (uploadError) {
+            console.error('Upload error:', uploadError);
+            continue;
+          }
+
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from('avatars').getPublicUrl(filePath);
+
+          uploadedUrls.push(publicUrl);
+        } catch (error) {
+          console.error('File processing error:', error);
+          continue;
+        }
       }
+
+      if (uploadedUrls.length === 0) {
+        return json(
+          { error: 'No files were uploaded successfully' },
+          { status: 400 },
+        );
+      }
+
+      // Set the first uploaded image as the profile picture if user doesn't have one
+      if (!user.avatar_url) {
+        await supabase
+          .from('users')
+          .update({ avatar_url: uploadedUrls[0] })
+          .eq('id', user.id);
+      }
+
+      return json({ success: true, avatar_urls: uploadedUrls });
     }
 
-    if (uploadedUrls.length === 0) {
-      return json(
-        { error: 'No files were uploaded successfully' },
-        { status: 400 },
-      );
-    }
+    // Handle personal avatar deletion
+    if (formData.get('action') === 'delete-personal-avatar') {
+      const avatarName = formData.get('avatar_name') as string;
+      const filePath = `${user.id}/custom/${avatarName}`;
 
-    // Set the first uploaded image as the profile picture if user doesn't have one
-    if (!user.avatar_url) {
-      await supabase
+      // Delete from storage
+      const { error: deleteError } = await supabase.storage
+        .from('avatars')
+        .remove([filePath]);
+
+      if (deleteError) {
+        console.error('Delete error:', deleteError);
+        return json({ error: 'Failed to delete avatar' }, { status: 500 });
+      }
+
+      // If this was the current avatar, remove it from user profile
+      const { data: currentUser } = await supabase
         .from('users')
-        .update({ avatar_url: uploadedUrls[0] })
+        .select('avatar_url')
+        .eq('id', user.id)
+        .single();
+
+      if (currentUser?.avatar_url?.includes(avatarName)) {
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ avatar_url: null })
+          .eq('id', user.id);
+
+        if (updateError) {
+          console.error('Profile update error:', updateError);
+          return json({ error: 'Profile update failed' }, { status: 500 });
+        }
+      }
+
+      return json({ success: true });
+    }
+
+    // Handle preset avatar selection
+    if (formData.get('action') === 'select-preset') {
+      const avatarUrl = formData.get('avatar_url') as string;
+
+      // Get current avatar URL before updating
+      const { data: currentUser } = await supabase
+        .from('users')
+        .select('avatar_url')
+        .eq('id', user.id)
+        .single();
+
+      // Delete old custom avatar if exists
+      if (currentUser?.avatar_url?.includes('/avatars/custom/')) {
+        await deleteOldAvatar(currentUser.avatar_url);
+      }
+
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ avatar_url: avatarUrl })
         .eq('id', user.id);
+
+      if (updateError) {
+        console.error('Profile update error:', updateError);
+        return Response.json(
+          { error: 'Profile update failed' },
+          { status: 500 },
+        );
+      }
+
+      return Response.json({ success: true, avatar_url: avatarUrl });
     }
 
-    return json({ success: true, avatar_urls: uploadedUrls });
-  }
+    // Handle avatar removal
+    if (formData.get('action') === 'remove-avatar') {
+      // Get current avatar URL before updating
+      const { data: currentUser } = await supabase
+        .from('users')
+        .select('avatar_url')
+        .eq('id', user.id)
+        .single();
 
-  // Handle personal avatar deletion
-  if (formData.get('action') === 'delete-personal-avatar') {
-    const avatarName = formData.get('avatar_name') as string;
-    const filePath = `${user.id}/custom/${avatarName}`;
+      // Delete old custom avatar if exists
+      if (currentUser?.avatar_url?.includes('/avatars/custom/')) {
+        await deleteOldAvatar(currentUser.avatar_url);
+      }
 
-    // Delete from storage
-    const { error: deleteError } = await supabase.storage
-      .from('avatars')
-      .remove([filePath]);
-
-    if (deleteError) {
-      console.error('Delete error:', deleteError);
-      return json({ error: 'Failed to delete avatar' }, { status: 500 });
-    }
-
-    // If this was the current avatar, remove it from user profile
-    const { data: currentUser } = await supabase
-      .from('users')
-      .select('avatar_url')
-      .eq('id', user.id)
-      .single();
-
-    if (currentUser?.avatar_url?.includes(avatarName)) {
       const { error: updateError } = await supabase
         .from('users')
         .update({ avatar_url: null })
@@ -126,68 +198,15 @@ export async function action({ request }: ActionFunctionArgs) {
         console.error('Profile update error:', updateError);
         return json({ error: 'Profile update failed' }, { status: 500 });
       }
+
+      return json({ success: true });
     }
 
-    return json({ success: true });
+    return json({ error: 'Invalid action' }, { status: 400 });
+  } catch (error) {
+    errorLog(error, 'Settings Action');
+    throw error;
   }
-
-  // Handle preset avatar selection
-  if (formData.get('action') === 'select-preset') {
-    const avatarUrl = formData.get('avatar_url') as string;
-
-    // Get current avatar URL before updating
-    const { data: currentUser } = await supabase
-      .from('users')
-      .select('avatar_url')
-      .eq('id', user.id)
-      .single();
-
-    // Delete old custom avatar if exists
-    if (currentUser?.avatar_url?.includes('/avatars/custom/')) {
-      await deleteOldAvatar(currentUser.avatar_url);
-    }
-
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ avatar_url: avatarUrl })
-      .eq('id', user.id);
-
-    if (updateError) {
-      console.error('Profile update error:', updateError);
-      return Response.json({ error: 'Profile update failed' }, { status: 500 });
-    }
-
-    return Response.json({ success: true, avatar_url: avatarUrl });
-  }
-
-  // Handle avatar removal
-  if (formData.get('action') === 'remove-avatar') {
-    // Get current avatar URL before updating
-    const { data: currentUser } = await supabase
-      .from('users')
-      .select('avatar_url')
-      .eq('id', user.id)
-      .single();
-
-    // Delete old custom avatar if exists
-    if (currentUser?.avatar_url?.includes('/avatars/custom/')) {
-      await deleteOldAvatar(currentUser.avatar_url);
-    }
-
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ avatar_url: null })
-      .eq('id', user.id);
-
-    if (updateError) {
-      console.error('Profile update error:', updateError);
-      return json({ error: 'Profile update failed' }, { status: 500 });
-    }
-
-    return json({ success: true });
-  }
-
-  return json({ error: 'Invalid action' }, { status: 400 });
 }
 
 export default function Settings() {

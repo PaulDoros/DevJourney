@@ -11,6 +11,7 @@ import { RemixServer } from '@remix-run/react';
 import { renderToPipeableStream } from 'react-dom/server';
 import { createReadableStreamFromReadable } from '@remix-run/node';
 import { isbot } from 'isbot';
+import { debugLog, errorLog } from '~/utils/debug.server';
 
 const ABORT_DELAY = 5000;
 
@@ -20,6 +21,12 @@ export default function handleRequest(
   responseHeaders: Headers,
   remixContext: EntryContext,
 ) {
+  debugLog('Server request started', {
+    url: request.url,
+    method: request.method,
+    status: responseStatusCode,
+  });
+
   return isbot(request.headers.get('user-agent'))
     ? handleBotRequest(
         request,
@@ -117,13 +124,12 @@ function handleBrowserRequest(
           pipe(body);
         },
         onShellError(error: unknown) {
+          console.error('Shell error:', error);
           reject(error);
         },
         onError(error: unknown) {
+          console.error('Streaming error:', error);
           responseStatusCode = 500;
-          // Log streaming rendering errors from inside the shell.  Don't log
-          // errors encountered during initial shell rendering since they'll
-          // reject and get logged in handleDocumentRequest.
           if (shellRendered) {
             console.error(error);
           }
@@ -131,6 +137,9 @@ function handleBrowserRequest(
       },
     );
 
-    setTimeout(abort, ABORT_DELAY);
+    setTimeout(() => {
+      abort();
+      reject(new Error('Timeout rendering page'));
+    }, ABORT_DELAY);
   });
 }
