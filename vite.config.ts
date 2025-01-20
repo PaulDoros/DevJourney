@@ -1,17 +1,22 @@
 import { vitePlugin as remix } from '@remix-run/dev';
 import { defineConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
+import { vercelPreset } from '@vercel/remix/vite';
 
 export default defineConfig({
-  plugins: [remix(), tsconfigPaths()],
+  plugins: [
+    remix({
+      presets: [vercelPreset()],
+    }),
+    tsconfigPaths(),
+  ],
   build: {
     rollupOptions: {
-      external: ['framer-motion'],
+      external: [],
     },
   },
   optimizeDeps: {
     include: ['framer-motion', 'lucide-react', '@emotion/is-prop-valid'],
-    exclude: ['@remix-run/dev', '@remix-run/serve'],
   },
   ssr: {
     noExternal: ['framer-motion', 'lucide-react', '@emotion/is-prop-valid'],
