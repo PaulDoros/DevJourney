@@ -4,8 +4,9 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
+    "clean": "rm -rf .cache build public/build",
+    "dev": "remix vite:dev",
     "build": "remix vite:build",
-    "dev": "remix vite:dev --port 3000",
     "start": "remix-serve ./build/server/index.js",
     "typecheck": "tsc",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
