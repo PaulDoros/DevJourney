@@ -50,7 +50,12 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
             </p>
 
             <div className="flex flex-wrap gap-3">
-              <Form method="post" encType="multipart/form-data">
+              <Form
+                method="post"
+                encType="multipart/form-data"
+                action="/actions/settings"
+              >
+                <input type="hidden" name="action" value="upload-avatar" />
                 <input
                   type="file"
                   name="avatar"
@@ -64,7 +69,6 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
                       e.target.files &&
                       e.target.files.length > 0
                     ) {
-                      // Check file sizes before submitting
                       const hasLargeFile = Array.from(e.target.files).some(
                         (file) => file.size > 5 * 1024 * 1024,
                       );
@@ -94,7 +98,7 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
               </Form>
 
               {user.avatar_url && (
-                <Form method="post">
+                <Form method="post" action="/actions/settings">
                   <input type="hidden" name="action" value="remove-avatar" />
                   <button
                     type="submit"
@@ -121,7 +125,7 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
                     className="h-full w-full rounded-lg object-cover"
                   />
                   <div className="absolute inset-0 flex items-center justify-center gap-2 rounded-lg bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                    <Form method="post">
+                    <Form method="post" action="/actions/settings">
                       <input
                         type="hidden"
                         name="action"
@@ -152,7 +156,7 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
                         </svg>
                       </button>
                     </Form>
-                    <Form method="post">
+                    <Form method="post" action="/actions/settings">
                       <input
                         type="hidden"
                         name="action"
@@ -206,7 +210,7 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
                   <Form
                     key={avatar.id}
                     method="post"
-                    action="/settings"
+                    action="/actions/settings"
                     className="group"
                   >
                     <input type="hidden" name="action" value="select-preset" />
@@ -236,7 +240,7 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
                   <Form
                     key={avatar.id}
                     method="post"
-                    action="/settings"
+                    action="/actions/settings"
                     className="group"
                   >
                     <input type="hidden" name="action" value="select-preset" />

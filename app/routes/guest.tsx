@@ -10,9 +10,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 }
 
-// Optional: Add action to handle any guest-specific setup
-export async function action() {
-  return Response.json({
-    message: 'Guest access granted. Some features will be limited.',
-  });
+// Add a default export to prevent empty chunk
+export default function Guest() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-xl font-semibold">Creating guest account...</h1>
+        <p className="text-gray-500">
+          Please wait while we set up your account.
+        </p>
+      </div>
+    </div>
+  );
 }

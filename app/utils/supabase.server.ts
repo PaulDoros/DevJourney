@@ -1,22 +1,22 @@
 import { createClient } from '@supabase/supabase-js';
 import { getEnvVars } from './env.server';
 
-const env = getEnvVars();
+let supabase: ReturnType<typeof createClient>;
 
-if (!env.SUPABASE_URL) throw new Error('SUPABASE_URL is required');
-if (!env.SUPABASE_ANON_KEY) throw new Error('SUPABASE_ANON_KEY is required');
+try {
+  const env = getEnvVars();
+  supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+} catch (error) {
+  console.error('Supabase initialization error:', error);
+  throw error;
+}
 
-// Create a single supabase client for interacting with your database
-export const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-  },
-  db: {
-    schema: 'public',
-  },
-});
+export { supabase };
 
 // Helper function to check if a user exists
 export async function checkUserExists(userId: string) {

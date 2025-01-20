@@ -6,11 +6,12 @@ export default defineConfig({
   plugins: [remix(), tsconfigPaths()],
   build: {
     rollupOptions: {
-      external: [],
+      external: ['framer-motion'],
     },
   },
   optimizeDeps: {
     include: ['framer-motion', 'lucide-react', '@emotion/is-prop-valid'],
+    exclude: ['@remix-run/dev', '@remix-run/serve'],
   },
   ssr: {
     noExternal: ['framer-motion', 'lucide-react', '@emotion/is-prop-valid'],
