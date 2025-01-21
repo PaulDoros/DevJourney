@@ -1,13 +1,13 @@
 import { PageLayout } from '~/components/layouts/PageLayout';
 import { useLoaderData } from '@remix-run/react';
-import { LoaderFunctionArgs, json } from '@remix-run/node';
+import { LoaderFunctionArgs } from '@remix-run/node';
 import { requireUser } from '~/utils/session.server';
 import { Button } from '~/components/ui/Button';
 import { UserAvatar } from '~/components/UserAvatar';
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUser(request);
-  return json({ user });
+  return { user };
 }
 
 export default function Profile() {

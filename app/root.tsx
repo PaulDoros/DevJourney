@@ -67,8 +67,7 @@ export const links: LinksFunction = () => [
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUserFromSession(request);
-
-  return json({ user });
+  return { user };
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {

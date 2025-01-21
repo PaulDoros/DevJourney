@@ -8,7 +8,6 @@ export function PageTransition({ children }: PropsWithChildren) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
-      className="flex h-full flex-1 flex-col"
     >
       {children}
     </motion.div>

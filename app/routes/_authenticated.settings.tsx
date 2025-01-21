@@ -2,27 +2,31 @@ import { ThemeSwitcher } from '~/components/ThemeSwitcher';
 import { useTheme } from '~/utils/theme-provider';
 import { PageLayout } from '~/components/layouts/PageLayout';
 import { useLoaderData } from '@remix-run/react';
-import { LoaderFunctionArgs, json, ActionFunctionArgs } from '@remix-run/node';
+import { LoaderFunctionArgs, ActionFunctionArgs } from '@remix-run/node';
 import { requireUser } from '~/utils/session.server';
 import { AvatarSettings } from '~/components/Settings/AvatarSettings';
 import { supabase } from '~/utils/supabase.server';
 import {
   getUserAvatars,
   deleteOldAvatar,
+  uploadAvatar,
 } from '~/utils/supabase-storage.server';
 import { createServerSupabase } from '~/utils/supabase';
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUser(request);
   const personalAvatars = await getUserAvatars(user.id);
-  return json({ user, personalAvatars });
+
+  // Just return the object directly
+  return {
+    user,
+    personalAvatars,
+  };
 }
 
 export async function action({ request }: ActionFunctionArgs) {
   const user = await requireUser(request);
   const formData = await request.formData();
-
-  // Get authenticated client
   const { supabase } = createServerSupabase(request);
 
   // Handle file upload
@@ -31,59 +35,31 @@ export async function action({ request }: ActionFunctionArgs) {
     const uploadedUrls = [];
 
     for (const fileData of files) {
-      // Skip if not a file
       if (!(fileData instanceof Blob)) continue;
-
       const file = fileData as Blob;
 
       if (!file || file.size === 0) continue;
-
       if (file.size > 5 * 1024 * 1024) {
-        return json({ error: 'File too large (max 5MB)' }, { status: 400 });
+        throw new Response('File too large (max 5MB)', { status: 400 });
       }
 
-      // Get the file name from the formData
-      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const filePath = `${user.id}/custom/${fileName}`;
-
       try {
-        // Convert blob to ArrayBuffer
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = new Uint8Array(arrayBuffer);
-
-        // Upload to user's folder in Supabase Storage
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(filePath, buffer, {
-            contentType: file.type,
-            cacheControl: '3600',
-            upsert: true,
-          });
-
-        if (uploadError) {
-          console.error('Upload error:', uploadError);
-          continue;
-        }
-
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from('avatars').getPublicUrl(filePath);
-
+        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const publicUrl = await uploadAvatar(user.id, file, fileName);
         uploadedUrls.push(publicUrl);
       } catch (error) {
-        console.error('File processing error:', error);
+        console.error('File upload error:', error);
         continue;
       }
     }
 
     if (uploadedUrls.length === 0) {
-      return json(
-        { error: 'No files were uploaded successfully' },
-        { status: 400 },
-      );
+      throw new Response('No files were uploaded successfully', {
+        status: 400,
+      });
     }
 
-    // Set the first uploaded image as the profile picture if user doesn't have one
+    // Update user avatar if they don't have one
     if (!user.avatar_url) {
       await supabase
         .from('users')
@@ -91,7 +67,7 @@ export async function action({ request }: ActionFunctionArgs) {
         .eq('id', user.id);
     }
 
-    return json({ success: true, avatar_urls: uploadedUrls });
+    return { success: true, avatar_urls: uploadedUrls };
   }
 
   // Handle personal avatar deletion
@@ -106,7 +82,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
     if (deleteError) {
       console.error('Delete error:', deleteError);
-      return json({ error: 'Failed to delete avatar' }, { status: 500 });
+      throw new Response('Failed to delete avatar', { status: 500 });
     }
 
     // If this was the current avatar, remove it from user profile
@@ -124,11 +100,11 @@ export async function action({ request }: ActionFunctionArgs) {
 
       if (updateError) {
         console.error('Profile update error:', updateError);
-        return json({ error: 'Profile update failed' }, { status: 500 });
+        throw new Response('Profile update failed', { status: 500 });
       }
     }
 
-    return json({ success: true });
+    return { success: true };
   }
 
   // Handle preset avatar selection
@@ -154,10 +130,10 @@ export async function action({ request }: ActionFunctionArgs) {
 
     if (updateError) {
       console.error('Profile update error:', updateError);
-      return Response.json({ error: 'Profile update failed' }, { status: 500 });
+      throw new Response('Profile update failed', { status: 500 });
     }
 
-    return Response.json({ success: true, avatar_url: avatarUrl });
+    return { success: true, avatar_url: avatarUrl };
   }
 
   // Handle avatar removal
@@ -181,13 +157,13 @@ export async function action({ request }: ActionFunctionArgs) {
 
     if (updateError) {
       console.error('Profile update error:', updateError);
-      return json({ error: 'Profile update failed' }, { status: 500 });
+      throw new Response('Profile update failed', { status: 500 });
     }
 
-    return json({ success: true });
+    return { success: true };
   }
 
-  return json({ error: 'Invalid action' }, { status: 400 });
+  throw new Response('Invalid action', { status: 400 });
 }
 
 export default function Settings() {
