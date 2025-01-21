@@ -15,7 +15,7 @@ import { createServerSupabase } from '~/utils/supabase';
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUser(request);
   const personalAvatars = await getUserAvatars(user.id);
-  return Response.json({ user, personalAvatars });
+  return json({ user, personalAvatars });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
