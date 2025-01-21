@@ -1,25 +1,25 @@
-import { Links, Meta, Scripts } from '@remix-run/react';
+import { isRouteErrorResponse, useRouteError } from '@remix-run/react';
 
 export function DefaultErrorFallback() {
+  const error = useRouteError();
+
+  if (isRouteErrorResponse(error)) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center p-4">
+        <h1 className="text-2xl font-bold text-red-600">
+          {error.status} {error.statusText}
+        </h1>
+        <p className="mt-2 text-gray-600">{error.data}</p>
+      </div>
+    );
+  }
+
   return (
-    <html lang="en" className="h-full">
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width,initial-scale=1" />
-        <Meta />
-        <Links />
-        <title>Loading...</title>
-      </head>
-      <body className="h-full">
-        <div className="flex min-h-screen flex-col items-center justify-center bg-light-secondary">
-          <div className="flex w-full max-w-2xl flex-col items-center justify-center rounded-lg bg-light-primary p-8 shadow-lg">
-            <h1 className="mb-4 text-4xl font-bold text-light-accent">
-              Loading...
-            </h1>
-          </div>
-        </div>
-        <Scripts />
-      </body>
-    </html>
+    <div className="flex min-h-screen flex-col items-center justify-center p-4">
+      <h1 className="text-2xl font-bold text-red-600">Application Error</h1>
+      <p className="mt-2 text-gray-600">
+        {error instanceof Error ? error.message : 'Unknown error occurred'}
+      </p>
+    </div>
   );
 }
