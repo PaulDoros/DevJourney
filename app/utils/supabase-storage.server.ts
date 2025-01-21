@@ -62,13 +62,6 @@ export async function initializeStorage() {
         throw createError;
       }
 
-      // Create initial folder structure
-      await supabaseAdmin.storage
-        .from('avatars')
-        .upload('preset/.keep', new Uint8Array(0), {
-          upsert: true,
-        });
-
       console.log('Avatars bucket created successfully');
     } else {
       console.log('Avatars bucket already exists');
@@ -135,5 +128,41 @@ export async function getUserAvatars(userId: string) {
   } catch (error) {
     console.error('Error in getUserAvatars:', error);
     return [];
+  }
+}
+
+// Update the upload function to ensure proper path structure
+export async function uploadAvatar(
+  userId: string,
+  file: Blob,
+  filename: string,
+) {
+  const filePath = `${userId}/custom/${filename}`;
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = new Uint8Array(arrayBuffer);
+
+    const { data, error } = await supabaseAdmin.storage
+      .from('avatars')
+      .upload(filePath, buffer, {
+        contentType: file.type,
+        cacheControl: '3600',
+        upsert: true,
+      });
+
+    if (error) {
+      console.error('Upload error:', error);
+      throw error;
+    }
+
+    const {
+      data: { publicUrl },
+    } = supabaseAdmin.storage.from('avatars').getPublicUrl(filePath);
+
+    return publicUrl;
+  } catch (error) {
+    console.error('Avatar upload error:', error);
+    throw error;
   }
 }

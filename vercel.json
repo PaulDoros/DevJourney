@@ -1,4 +1,23 @@
 {
-  "installCommand": "pnpm install",
-  "buildCommand": "pnpm build"
+  "installCommand": "pnpm install --no-frozen-lockfile",
+  "buildCommand": "pnpm build",
+  "framework": "remix",
+  "regions": ["iad1"],
+  "outputDirectory": "build/client",
+  "headers": [
+    {
+      "source": "/build/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ],
+  "build": {
+    "env": {
+      "ENABLE_VC_BUILD": "1"
+    }
+  }
 }

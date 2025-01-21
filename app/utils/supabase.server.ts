@@ -9,12 +9,17 @@ if (!env.SUPABASE_ANON_KEY) throw new Error('SUPABASE_ANON_KEY is required');
 // Create a single supabase client for interacting with your database
 export const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
   auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
+    autoRefreshToken: false,
+    persistSession: false,
+    detectSessionInUrl: false,
   },
   db: {
     schema: 'public',
+  },
+  global: {
+    headers: {
+      'x-application-name': 'dev-journey',
+    },
   },
 });
 
