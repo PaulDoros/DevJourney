@@ -1,5 +1,11 @@
-import { Player } from '@lottiefiles/react-lottie-player';
 import { useHydrated } from 'remix-utils/use-hydrated';
+import { lazy, Suspense } from 'react';
+
+const Player = lazy(() =>
+  import('@lottiefiles/react-lottie-player').then((mod) => ({
+    default: mod.Player,
+  })),
+);
 
 interface AnimatedAvatarProps {
   url: string;
@@ -27,19 +33,21 @@ export const AnimatedAvatar = ({
       } relative overflow-hidden rounded-full bg-gray-100`}
     >
       {isHydrated && (
-        <Player
-          src={url}
-          autoplay
-          loop
-          style={{
-            width: '100%',
-            height: '100%',
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-          }}
-        />
+        <Suspense fallback={null}>
+          <Player
+            src={url}
+            autoplay
+            loop
+            style={{
+              width: '100%',
+              height: '100%',
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+            }}
+          />
+        </Suspense>
       )}
     </div>
   );
