@@ -213,13 +213,13 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
                     <input type="hidden" name="avatar_url" value={avatar.url} />
                     <button
                       type="submit"
-                      className="group relative aspect-square w-full overflow-hidden rounded-full border-2 border-transparent transition-all duration-200 hover:border-light-accent retro:hover:border-retro-accent multi:hover:border-white/50 dark:hover:border-dark-accent"
+                      className="group relative flex aspect-square h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-transparent transition-all duration-200 hover:border-light-accent retro:hover:border-retro-accent multi:hover:border-white/50 dark:hover:border-dark-accent"
                       title={avatar.preview}
                     >
                       <UserAvatar
                         username={user.username}
                         avatar_url={avatar.url}
-                        size="md"
+                        size="lg"
                       />
                     </button>
                   </Form>

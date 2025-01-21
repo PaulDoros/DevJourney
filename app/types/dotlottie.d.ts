@@ -1,19 +1,17 @@
-declare module '@dotlottie/react-player' {
-  import { ComponentProps } from 'react';
+declare module '@lottiefiles/react-lottie-player' {
+  import { ComponentType } from 'react';
 
-  export interface DotLottiePlayerProps extends ComponentProps<'div'> {
-    src?: string;
+  interface PlayerProps {
+    src: string | object;
     autoplay?: boolean;
     loop?: boolean;
-    controls?: boolean;
-    mode?: 'normal' | 'bounce';
     style?: React.CSSProperties;
-    background?: string;
+    className?: string;
     speed?: number;
-    direction?: number;
+    background?: string;
     hover?: boolean;
-    renderer?: 'svg' | 'canvas';
+    direction?: number;
   }
 
-  export const DotLottiePlayer: React.FC<DotLottiePlayerProps>;
+  export const Player: ComponentType<PlayerProps>;
 }

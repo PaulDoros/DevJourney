@@ -24,30 +24,19 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks: {
           framer: ['framer-motion'],
-          lottie: ['@dotlottie/react-player'],
         },
       },
     },
   },
   optimizeDeps: {
-    include: [
-      'framer-motion',
-      'lucide-react',
-      '@emotion/is-prop-valid',
-      '@dotlottie/react-player',
-    ],
+    include: ['framer-motion', 'lucide-react', '@emotion/is-prop-valid'],
     exclude: ['@remix-run/react', 'utf-8-validate', 'bufferutil'],
     esbuildOptions: {
       target: 'es2020',
     },
   },
   ssr: {
-    noExternal: [
-      'framer-motion',
-      'lucide-react',
-      '@emotion/is-prop-valid',
-      '@dotlottie/react-player',
-    ],
+    noExternal: ['framer-motion', 'lucide-react', '@emotion/is-prop-valid'],
     target: 'node',
     format: 'esm',
   },

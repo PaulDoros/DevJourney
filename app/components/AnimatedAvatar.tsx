@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { useHydrated } from '~/hooks/useHydrated';
+import { Player } from '@lottiefiles/react-lottie-player';
 
 interface AnimatedAvatarProps {
   url: string;
@@ -12,34 +11,30 @@ export const AnimatedAvatar = ({
   size = 'md',
   className,
 }: AnimatedAvatarProps) => {
-  const isHydrated = useHydrated();
-  const [LottiePlayer, setLottiePlayer] = useState<any>(null);
-
-  useEffect(() => {
-    // Dynamically import the Lottie player only on the client side
-    import('@dotlottie/react-player').then((module) => {
-      setLottiePlayer(module.DotLottiePlayer);
-    });
-  }, []);
-
-  // Show loading state during SSR or while loading the Lottie player
-  if (!isHydrated || !LottiePlayer) {
-    return (
-      <div
-        className={` ${className} ${size} $ animate-pulse rounded-full bg-gray-200 dark:bg-gray-700`}
-      />
-    );
-  }
+  const sizeClasses = {
+    sm: 'h-8 w-8',
+    md: 'h-12 w-12',
+    lg: 'h-32 w-32',
+  };
 
   return (
     <div
-      className={` ${className} ${size} max-h-60 max-w-60 overflow-hidden rounded-full`}
+      className={`${sizeClasses[size]} ${
+        className ?? ''
+      } relative overflow-hidden rounded-full`}
     >
-      <LottiePlayer
+      <Player
         src={url}
         autoplay
         loop
-        style={{ width: '100%', height: '100%' }}
+        style={{
+          width: '100%',
+          height: '100%',
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+        }}
       />
     </div>
   );
