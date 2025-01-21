@@ -9,8 +9,8 @@ import {
   useLocation,
   useLoaderData,
   LiveReload,
-  json,
 } from '@remix-run/react';
+import { json } from '@remix-run/node';
 import type { LinksFunction, LoaderFunctionArgs } from '@remix-run/node';
 import { lazy, Suspense } from 'react';
 
@@ -68,7 +68,7 @@ export const links: LinksFunction = () => [
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUserFromSession(request);
 
-  return Response.json({ user });
+  return json({ user });
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
