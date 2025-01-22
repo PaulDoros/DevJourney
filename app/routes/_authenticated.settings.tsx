@@ -2,7 +2,7 @@ import { ThemeSwitcher } from '~/components/ThemeSwitcher';
 import { useTheme } from '~/utils/theme-provider';
 import { PageLayout } from '~/components/layouts/PageLayout';
 import { useLoaderData } from '@remix-run/react';
-import { LoaderFunctionArgs, ActionFunctionArgs } from '@remix-run/node';
+import { LoaderFunctionArgs, ActionFunctionArgs, json } from '@remix-run/node';
 import { requireUser } from '~/utils/session.server';
 import { AvatarSettings } from '~/components/Settings/AvatarSettings';
 import { supabase } from '~/utils/supabase.server';
@@ -12,22 +12,133 @@ import {
   uploadAvatar,
 } from '~/utils/supabase-storage.server';
 import { createServerSupabase } from '~/utils/supabase';
+import { getAvailableAvatars } from '~/services/achievements.server';
+import { getUserAchievements } from '~/services/achievements.server';
+import {
+  checkAndUnlockThemeAchievement,
+  checkAndUnlockAvatarAchievement,
+} from '~/services/achievements.server';
+import type { UserAchievement } from '~/types/achievements';
+
+interface AvatarWithRequirements {
+  id: string;
+  title: string;
+  type: string;
+  url: string;
+  preview_url: string;
+  requirements?: {
+    points?: number;
+    achievement?: string;
+    locked: boolean;
+    reason?: string;
+  };
+}
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUser(request);
   const personalAvatars = await getUserAvatars(user.id);
+  const availableAvatars = await getAvailableAvatars(request, user.id);
+  const achievements = await getUserAchievements(request, user.id);
 
-  // Just return the object directly
-  return {
+  // Calculate total points
+  const totalPoints = achievements.reduce(
+    (total, ua) => total + (ua.achievement?.points || 0),
+    0,
+  );
+
+  // Add requirements to avatars
+  const avatarsWithRequirements: AvatarWithRequirements[] =
+    availableAvatars.map((avatar) => ({
+      ...avatar,
+      requirements: {
+        points: getAvatarPointsRequirement(avatar.id),
+        achievement: getAvatarAchievementRequirement(avatar.id),
+        locked: isAvatarLocked(avatar, achievements, totalPoints),
+        reason: getAvatarLockReason(avatar, achievements, totalPoints),
+      },
+    }));
+
+  return json({
     user,
     personalAvatars,
+    availableAvatars: avatarsWithRequirements,
+    achievements,
+    totalPoints,
+  });
+}
+
+// Helper functions for avatar requirements
+function getAvatarPointsRequirement(avatarId: string): number | undefined {
+  const requirements: Record<string, number> = {
+    'theme-1': 200,
+    'collector-1': 500,
+    // Add more avatar point requirements
   };
+  return requirements[avatarId];
+}
+
+function getAvatarAchievementRequirement(avatarId: string): string | undefined {
+  const requirements: Record<string, string> = {
+    'theme-1': 'Theme Master',
+    'collector-1': 'Avatar Collector',
+    // Add more avatar achievement requirements
+  };
+  return requirements[avatarId];
+}
+
+function isAvatarLocked(
+  avatar: any,
+  achievements: any[],
+  totalPoints: number,
+): boolean {
+  const pointsReq = getAvatarPointsRequirement(avatar.id);
+  const achievementReq = getAvatarAchievementRequirement(avatar.id);
+
+  if (pointsReq && totalPoints < pointsReq) return true;
+  if (
+    achievementReq &&
+    !achievements.some((a) => a.achievement?.name === achievementReq)
+  )
+    return true;
+
+  return false;
+}
+
+function getAvatarLockReason(
+  avatar: any,
+  achievements: any[],
+  totalPoints: number,
+): string | undefined {
+  const pointsReq = getAvatarPointsRequirement(avatar.id);
+  const achievementReq = getAvatarAchievementRequirement(avatar.id);
+
+  if (pointsReq && totalPoints < pointsReq) {
+    return `Requires ${pointsReq} points (you have ${totalPoints})`;
+  }
+  if (
+    achievementReq &&
+    !achievements.some((a) => a.achievement?.name === achievementReq)
+  ) {
+    return `Unlock "${achievementReq}" achievement first`;
+  }
+
+  return undefined;
 }
 
 export async function action({ request }: ActionFunctionArgs) {
   const user = await requireUser(request);
   const formData = await request.formData();
   const { supabase } = createServerSupabase(request);
+
+  // Handle theme change achievement
+  if (formData.get('action') === 'change-theme') {
+    await checkAndUnlockThemeAchievement(request, user.id);
+  }
+
+  // Handle avatar change achievement
+  if (formData.has('avatar') || formData.get('action') === 'select-preset') {
+    await checkAndUnlockAvatarAchievement(request, user.id);
+  }
 
   // Handle file upload
   if (formData.has('avatar')) {
@@ -167,7 +278,8 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function Settings() {
-  const { user } = useLoaderData<typeof loader>();
+  const { user, achievements, totalPoints, availableAvatars } =
+    useLoaderData<typeof loader>();
 
   return (
     <PageLayout>
@@ -192,7 +304,12 @@ export default function Settings() {
 
           {!user.is_guest && (
             <>
-              <AvatarSettings user={user} />
+              <AvatarSettings
+                user={user}
+                availableAvatars={availableAvatars}
+                totalPoints={totalPoints}
+                achievements={achievements}
+              />
 
               <section>
                 <h2 className="mb-4 text-xl font-semibold text-light-text/90 retro:text-retro-text/90 multi:text-white/90 multi:drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] dark:text-dark-text/90">

@@ -8,14 +8,101 @@ import { UserAvatar } from '~/components/UserAvatar';
 import type { User } from '~/types/user';
 import { cn } from '~/lib/utils';
 import { ANIMATED_AVATARS, STATIC_AVATARS } from '~/constants/avatars';
+import type { AvatarPreset } from '~/constants/avatars';
 import { useState } from 'react';
 import { Modal } from '~/components/ui/Modal';
+import { Button } from '~/components/ui/Button';
+import type { UserAchievement } from '~/types/achievements';
+import { AnimatedAvatar } from '~/components/AnimatedAvatar';
+
+interface AvatarWithRequirements {
+  id: string;
+  title: string;
+  type: string;
+  url: string;
+  preview_url: string;
+  requirements?: {
+    points?: number;
+    achievement?: string;
+    locked: boolean;
+    reason?: string;
+  };
+}
 
 interface AvatarSettingsProps {
   user: User;
+  availableAvatars: AvatarWithRequirements[];
+  totalPoints: number;
+  achievements: UserAchievement[];
 }
 
-export function AvatarSettings({ user }: AvatarSettingsProps) {
+function isAvatarLocked(
+  avatar: AvatarPreset,
+  achievements: UserAchievement[],
+  totalPoints: number,
+): boolean {
+  if (!avatar.requirements) return false;
+
+  const { points, achievement } = avatar.requirements;
+
+  if (points && totalPoints < points) return true;
+  if (
+    achievement &&
+    !achievements.some((ua) => ua.achievement?.name === achievement)
+  )
+    return true;
+
+  return false;
+}
+
+function getAvatarLockReason(
+  avatar: AvatarPreset,
+  achievements: UserAchievement[],
+  totalPoints: number,
+): string | undefined {
+  if (!avatar.requirements) return undefined;
+
+  const { points, achievement } = avatar.requirements;
+
+  if (points && totalPoints < points) {
+    return `Requires ${points} points (you have ${totalPoints})`;
+  }
+  if (
+    achievement &&
+    !achievements.some((ua) => ua.achievement?.name === achievement)
+  ) {
+    return `Unlock "${achievement}" achievement first`;
+  }
+
+  return undefined;
+}
+
+function LockOverlay({ lockReason }: { lockReason: string | undefined }) {
+  // Extract points from lockReason if it exists
+  const pointsRequired = lockReason?.match(/Requires (\d+) points/)?.[1];
+
+  return (
+    <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50">
+      <div className="text-center text-xs text-white">
+        <span className="text-lg">🔒</span>
+        {/* Show points only on mobile, full reason on desktop */}
+        <p className="mt-1 px-1 text-[10px]">
+          <span className="hidden sm:inline">{lockReason}</span>
+          <span className="sm:hidden">
+            {pointsRequired && `${pointsRequired}p`}
+          </span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export function AvatarSettings({
+  user,
+  availableAvatars,
+  totalPoints,
+  achievements,
+}: AvatarSettingsProps) {
   const submit = useSubmit();
   const navigation = useNavigation();
   const isUploading = navigation.state === 'submitting';
@@ -30,9 +117,48 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
 
   return (
     <section>
-      <h2 className="mb-4 text-xl font-semibold text-light-text/90 retro:text-retro-text/90 multi:text-white/90 multi:drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] dark:text-dark-text/90">
-        Profile Picture
-      </h2>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-light-text/90 retro:text-retro-text/90 multi:text-white/90 dark:text-dark-text/90">
+          Avatar
+        </h2>
+        <span className="text-sm text-light-text/70 retro:text-retro-text/70 multi:text-white/70 dark:text-dark-text/70">
+          {totalPoints} Points Available
+        </span>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {availableAvatars.map((avatar) => (
+          <div
+            key={avatar.id}
+            className={cn(
+              'relative rounded-lg border p-4',
+              avatar.requirements?.locked
+                ? 'border-gray-200 opacity-50'
+                : 'border-light-accent/20',
+            )}
+          >
+            <div className="aspect-square">{/* Avatar preview */}</div>
+
+            {avatar.requirements?.locked ? (
+              <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/50 p-4">
+                <div className="text-center text-sm text-white">
+                  <span className="text-2xl">🔒</span>
+                  <p className="mt-2">{avatar.requirements.reason}</p>
+                </div>
+              </div>
+            ) : (
+              <Button
+                type="submit"
+                name="action"
+                value="select-preset"
+                className="mt-2 w-full"
+              >
+                Select Avatar
+              </Button>
+            )}
+          </div>
+        ))}
+      </div>
 
       {/* Current Avatar Section */}
 
@@ -240,28 +366,58 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
                 Animated Avatars
               </h4>
               <div className="grid grid-cols-4 gap-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
-                {ANIMATED_AVATARS.map((avatar) => (
-                  <Form
-                    key={avatar.id}
-                    method="post"
-                    action="/settings"
-                    className="group w-full max-w-[100px]"
-                  >
-                    <input type="hidden" name="action" value="select-preset" />
-                    <input type="hidden" name="avatar_url" value={avatar.url} />
-                    <button
-                      type="submit"
-                      className="group relative flex aspect-square h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-transparent transition-all duration-200 hover:border-light-accent retro:hover:border-retro-accent multi:hover:border-white/50 dark:hover:border-dark-accent"
-                      title={avatar.preview}
+                {ANIMATED_AVATARS.map((avatar) => {
+                  const isLocked = isAvatarLocked(
+                    avatar,
+                    achievements,
+                    totalPoints,
+                  );
+                  const lockReason = getAvatarLockReason(
+                    avatar,
+                    achievements,
+                    totalPoints,
+                  );
+
+                  return (
+                    <div
+                      key={avatar.id}
+                      className={cn(
+                        'group relative w-full max-w-[100px]',
+                        isLocked && 'opacity-50',
+                      )}
                     >
-                      <UserAvatar
-                        username={user.username}
-                        avatar_url={avatar.url}
-                        size="lg"
-                      />
-                    </button>
-                  </Form>
-                ))}
+                      <div className="aspect-square">
+                        <AnimatedAvatar
+                          url={avatar.url}
+                          size="lg"
+                          className="h-full w-full"
+                        />
+                      </div>
+
+                      {isLocked ? (
+                        <LockOverlay lockReason={lockReason} />
+                      ) : (
+                        <Form method="post" action="/settings">
+                          <input
+                            type="hidden"
+                            name="action"
+                            value="select-preset"
+                          />
+                          <input
+                            type="hidden"
+                            name="avatar_url"
+                            value={avatar.url}
+                          />
+                          <button
+                            type="submit"
+                            className="absolute inset-0 rounded-full border-2 border-transparent transition-all hover:border-light-accent"
+                            title={avatar.preview}
+                          />
+                        </Form>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -270,28 +426,58 @@ export function AvatarSettings({ user }: AvatarSettingsProps) {
                 Static Avatars
               </h4>
               <div className="grid grid-cols-4 gap-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
-                {STATIC_AVATARS.map((avatar) => (
-                  <Form
-                    key={avatar.id}
-                    method="post"
-                    action="/settings"
-                    className="group w-full max-w-[100px]"
-                  >
-                    <input type="hidden" name="action" value="select-preset" />
-                    <input type="hidden" name="avatar_url" value={avatar.url} />
-                    <button
-                      type="submit"
-                      className="group relative aspect-square w-full overflow-hidden rounded-full border-2 border-transparent transition-all duration-200 hover:border-light-accent retro:hover:border-retro-accent multi:hover:border-white/50 dark:hover:border-dark-accent"
-                      title={avatar.preview}
+                {STATIC_AVATARS.map((avatar) => {
+                  const isLocked = isAvatarLocked(
+                    avatar,
+                    achievements,
+                    totalPoints,
+                  );
+                  const lockReason = getAvatarLockReason(
+                    avatar,
+                    achievements,
+                    totalPoints,
+                  );
+
+                  return (
+                    <div
+                      key={avatar.id}
+                      className={cn(
+                        'group relative w-full max-w-[100px]',
+                        isLocked && 'opacity-50',
+                      )}
                     >
-                      <img
-                        src={avatar.url}
-                        alt={avatar.preview}
-                        className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-110"
-                      />
-                    </button>
-                  </Form>
-                ))}
+                      <div className="aspect-square overflow-hidden rounded-full">
+                        <img
+                          src={avatar.url}
+                          alt={avatar.preview}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+
+                      {isLocked ? (
+                        <LockOverlay lockReason={lockReason} />
+                      ) : (
+                        <Form method="post" action="/settings">
+                          <input
+                            type="hidden"
+                            name="action"
+                            value="select-preset"
+                          />
+                          <input
+                            type="hidden"
+                            name="avatar_url"
+                            value={avatar.url}
+                          />
+                          <button
+                            type="submit"
+                            className="absolute inset-0 rounded-full border-2 border-transparent transition-all hover:border-light-accent"
+                            title={avatar.preview}
+                          />
+                        </Form>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

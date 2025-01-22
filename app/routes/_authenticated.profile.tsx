@@ -1,17 +1,64 @@
 import { PageLayout } from '~/components/layouts/PageLayout';
-import { useLoaderData } from '@remix-run/react';
-import { LoaderFunctionArgs } from '@remix-run/node';
+import { useLoaderData, Link } from '@remix-run/react';
+import { LoaderFunctionArgs, json } from '@remix-run/node';
 import { requireUser } from '~/utils/session.server';
 import { Button } from '~/components/ui/Button';
 import { UserAvatar } from '~/components/UserAvatar';
+import { getUserAchievements } from '~/services/achievements.server';
+import { cn } from '~/lib/utils';
+import { AchievementsProgress } from '~/components/Achievements/AchievementsProgress';
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUser(request);
-  return { user };
+  const achievements = await getUserAchievements(request, user.id);
+
+  return json({
+    user,
+    achievements,
+    // Calculate total points from achievements
+    totalPoints: achievements.reduce(
+      (total, ua) => total + (ua.achievement?.points || 0),
+      0,
+    ),
+  });
+}
+
+// Add this component for achievement display
+function AchievementCard({
+  achievement,
+  unlocked,
+}: {
+  achievement: { name: string; description: string; points: number };
+  unlocked: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        'relative flex aspect-square flex-col items-center justify-center gap-1 rounded-lg p-3 text-center',
+        unlocked
+          ? 'bg-light-accent/10 retro:bg-retro-accent/10 multi:bg-white/20 dark:bg-dark-accent/10'
+          : 'bg-light-primary/50 retro:bg-retro-primary/50 multi:bg-white/10 dark:bg-dark-primary/50',
+      )}
+    >
+      {unlocked ? (
+        <>
+          <span className="text-2xl">🏆</span>
+          <span className="text-xs font-medium text-light-text/90 retro:text-retro-text/90 multi:text-white/90 dark:text-dark-text/90">
+            {achievement.name}
+          </span>
+          <span className="text-xs text-light-text/70 retro:text-retro-text/70 multi:text-white/70 dark:text-dark-text/70">
+            {achievement.points} pts
+          </span>
+        </>
+      ) : (
+        <span className="text-2xl">🔒</span>
+      )}
+    </div>
+  );
 }
 
 export default function Profile() {
-  const { user } = useLoaderData<typeof loader>();
+  const { user, achievements, totalPoints } = useLoaderData<typeof loader>();
 
   return (
     <PageLayout>
@@ -37,33 +84,54 @@ export default function Profile() {
         {/* Progress Section */}
         <section>
           <h2 className="mb-3 text-lg font-semibold text-light-text/90 retro:text-retro-text/90 multi:text-white/90 multi:drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] dark:text-dark-text/90 sm:mb-4 sm:text-xl">
-            Learning Progress
+            Achievement Progress
           </h2>
           <div className="rounded-lg border border-gray-300 bg-light-secondary p-4 retro:border-retro-text/30 retro:bg-retro-secondary multi:bg-multi-primary/60 dark:border-gray-600 dark:bg-dark-secondary sm:p-6">
-            <div className="space-y-3 sm:space-y-4">
-              <div className="h-2 w-full rounded-full bg-light-primary retro:bg-retro-primary multi:bg-white/20 dark:bg-dark-primary">
-                <div className="h-full w-3/4 rounded-full bg-light-accent retro:bg-retro-accent multi:bg-multi-accent dark:bg-dark-accent" />
-              </div>
-              <p className="text-sm text-light-text/80 retro:text-retro-text/80 multi:text-white/80 dark:text-dark-text/80">
-                75% of learning path completed
-              </p>
-            </div>
+            <AchievementsProgress achievements={achievements} />
           </div>
         </section>
 
         {/* Achievements Section */}
         <section>
-          <h2 className="mb-3 text-lg font-semibold text-light-text/90 retro:text-retro-text/90 multi:text-white/90 multi:drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] dark:text-dark-text/90 sm:mb-4 sm:text-xl">
-            Achievements
-          </h2>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-light-text/90 retro:text-retro-text/90 multi:text-white/90 multi:drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] dark:text-dark-text/90 sm:text-xl">
+              Recent Achievements
+            </h2>
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-light-text/70 retro:text-retro-text/70 multi:text-white/70 dark:text-dark-text/70">
+                {totalPoints} Points
+              </span>
+              <Link
+                to="/achievements"
+                className="text-sm font-medium text-light-accent hover:text-light-accent/80 retro:text-retro-accent retro:hover:text-retro-accent/80 multi:text-multi-accent multi:hover:text-multi-accent/80 dark:text-dark-accent dark:hover:text-dark-accent/80"
+              >
+                View All →
+              </Link>
+            </div>
+          </div>
           <div className="rounded-lg border border-gray-300 bg-light-secondary p-4 retro:border-retro-text/30 retro:bg-retro-secondary multi:bg-multi-primary/60 dark:border-gray-600 dark:bg-dark-secondary sm:p-6">
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-4">
-              {[...Array(6)].map((_, i) => (
-                <div
-                  key={i}
-                  className="aspect-square rounded-lg bg-light-primary/50 retro:bg-retro-primary/50 multi:bg-white/10 dark:bg-dark-primary/50"
+              {achievements.map((ua) => (
+                <AchievementCard
+                  key={ua.achievement?.id}
+                  achievement={{
+                    name: ua.achievement?.name ?? '',
+                    description: ua.achievement?.description ?? '',
+                    points: ua.achievement?.points ?? 0,
+                  }}
+                  unlocked={true}
                 />
               ))}
+              {/* Add some locked achievements */}
+              <AchievementCard
+                achievement={{
+                  name: 'Theme Master',
+                  description: 'Try all themes',
+                  points: 100,
+                }}
+                unlocked={false}
+              />
+              {/* Add more locked achievements as needed */}
             </div>
           </div>
         </section>

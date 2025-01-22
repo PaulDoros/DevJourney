@@ -1,5 +1,6 @@
 import { useHydrated } from 'remix-utils/use-hydrated';
 import { lazy, Suspense } from 'react';
+import { cn } from '~/lib/utils';
 
 const Player = lazy(() =>
   import('@lottiefiles/react-lottie-player').then((mod) => ({
@@ -28,9 +29,12 @@ export const AnimatedAvatar = ({
 
   return (
     <div
-      className={`${sizeClasses[size]} ${
-        className ?? ''
-      } relative overflow-hidden rounded-full bg-gray-100`}
+      className={cn(
+        sizeClasses[size],
+        'relative overflow-hidden rounded-full',
+        'bg-light-secondary retro:bg-retro-secondary multi:bg-multi-primary/60 dark:bg-dark-secondary',
+        className,
+      )}
     >
       {isHydrated && (
         <Suspense fallback={null}>
