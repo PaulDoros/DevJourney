@@ -1,5 +1,3 @@
-import { Logo } from '../Logo';
-
 export const Dashboard = () => {
   return (
     <div className="flex flex-1">
