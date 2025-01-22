@@ -14,10 +14,7 @@ import {
 import { createServerSupabase } from '~/utils/supabase';
 import { getAvailableAvatars } from '~/services/achievements.server';
 import { getUserAchievements } from '~/services/achievements.server';
-import {
-  checkAndUnlockThemeAchievement,
-  checkAndUnlockAvatarAchievement,
-} from '~/services/achievements.server';
+import { checkAndUnlockAvatarAchievement } from '~/services/achievements.server';
 import type { UserAchievement } from '~/types/achievements';
 
 interface AvatarWithRequirements {
