@@ -98,7 +98,7 @@ export const DesktopSidebar = ({
     return (
       <div
         className={cn(
-          'hidden h-full w-[300px] flex-shrink-0 border-t-0 px-4 py-4 md:flex md:flex-col',
+          'hidden h-full w-[200px] flex-shrink-0 border-t-0 px-4 py-4 md:flex md:flex-col',
           'bg-light-secondary',
           'retro:bg-retro-secondary',
           'multi:bg-multi-primary/60 multi:backdrop-blur-sm',
@@ -114,7 +114,7 @@ export const DesktopSidebar = ({
   return (
     <motion.div
       className={cn(
-        'hidden h-full w-[300px] flex-shrink-0 border-t-0 px-4 py-4 md:flex md:flex-col',
+        'hidden h-full w-[200px] flex-shrink-0 border-t-0 px-4 py-4 md:flex md:flex-col',
         'bg-light-secondary',
         'retro:bg-retro-secondary',
         'multi:bg-multi-primary/60 multi:backdrop-blur-sm',
@@ -122,7 +122,7 @@ export const DesktopSidebar = ({
         className,
       )}
       animate={{
-        width: animate ? (open ? '300px' : '70px') : '300px',
+        width: animate ? (open ? '200px' : '70px') : '200px',
       }}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
@@ -217,8 +217,8 @@ export const SidebarLink = ({
         opacity: animate ? (open ? 1 : 0) : 1,
       }}
       transition={{
-        duration: 0.2,
-        ease: 'easeInOut',
+        duration: 0.3,
+        ease: [0.23, 1, 0.32, 1],
       }}
       className="ml-2 inline-block overflow-hidden whitespace-nowrap text-sm text-light-text transition duration-150 group-hover/sidebar:translate-x-1 retro:text-retro-text multi:text-white multi:drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] dark:text-dark-text"
       style={{
@@ -240,7 +240,16 @@ export const SidebarLink = ({
   );
 
   const content = (
-    <>
+    <motion.div
+      className="flex w-full items-center"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.3,
+        ease: [0.23, 1, 0.32, 1],
+        delay: link.isProfile ? 0 : 0.1,
+      }}
+    >
       <div className="flex-shrink-0">
         {link.isProfile && link.user ? (
           <UserAvatar
@@ -249,11 +258,16 @@ export const SidebarLink = ({
             size="sm"
           />
         ) : (
-          link.icon
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            transition={{ duration: 0.2 }}
+          >
+            {link.icon}
+          </motion.div>
         )}
       </div>
       <AnimatedText />
-    </>
+    </motion.div>
   );
 
   if (link.isForm) {
