@@ -1,5 +1,5 @@
 // Import the useTheme hook from our theme provider utility
-import { useTheme } from "~/utils/theme-provider";
+import { useTheme } from '~/utils/theme-provider';
 
 // ThemeSwitcher component allows users to switch between different theme modes
 export function ThemeSwitcher() {
@@ -8,15 +8,15 @@ export function ThemeSwitcher() {
 
   return (
     // Container with flex layout and gap between buttons
-    <div className="flex gap-4">
+    <div className="flex gap-1 md:gap-4">
       {/* Light theme button */}
       <button
-        onClick={() => setTheme("light")}
-        className={`px-4 py-2 rounded-md ${
+        onClick={() => setTheme('light')}
+        className={`rounded-md px-4 py-2 ${
           // Apply accent color when light theme is active, otherwise gray
-          theme === "light"
-            ? "bg-light-accent text-white"
-            : "bg-gray-200 text-gray-700"
+          theme === 'light'
+            ? 'bg-light-accent text-white'
+            : 'bg-gray-200 text-gray-700'
         }`}
       >
         Light
@@ -24,12 +24,12 @@ export function ThemeSwitcher() {
 
       {/* Dark theme button */}
       <button
-        onClick={() => setTheme("dark")}
-        className={`px-4 py-2 rounded-md ${
+        onClick={() => setTheme('dark')}
+        className={`rounded-md px-4 py-2 ${
           // Apply accent color when dark theme is active, otherwise gray
-          theme === "dark"
-            ? "bg-dark-accent text-white"
-            : "bg-gray-200 text-gray-700"
+          theme === 'dark'
+            ? 'bg-dark-accent text-white'
+            : 'bg-gray-200 text-gray-700'
         }`}
       >
         Dark
@@ -37,12 +37,12 @@ export function ThemeSwitcher() {
 
       {/* Retro theme button */}
       <button
-        onClick={() => setTheme("retro")}
-        className={`px-4 py-2 rounded-md ${
+        onClick={() => setTheme('retro')}
+        className={`rounded-md px-4 py-2 ${
           // Apply accent color when retro theme is active, otherwise gray
-          theme === "retro"
-            ? "bg-retro-accent text-white"
-            : "bg-gray-200 text-gray-700"
+          theme === 'retro'
+            ? 'bg-retro-accent text-white'
+            : 'bg-gray-200 text-gray-700'
         }`}
       >
         Retro
@@ -50,12 +50,12 @@ export function ThemeSwitcher() {
 
       {/* Multi-color theme button */}
       <button
-        onClick={() => setTheme("multi")}
-        className={`px-4 py-2 rounded-md ${
+        onClick={() => setTheme('multi')}
+        className={`rounded-md px-4 py-2 ${
           // Apply accent color when multi theme is active, otherwise gray
-          theme === "multi"
-            ? "bg-multi-accent text-white"
-            : "bg-gray-200 text-gray-700"
+          theme === 'multi'
+            ? 'bg-multi-accent text-white'
+            : 'bg-gray-200 text-gray-700'
         }`}
       >
         Multi
