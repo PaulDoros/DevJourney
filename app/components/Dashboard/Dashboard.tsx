@@ -9,7 +9,7 @@ export const Dashboard = () => {
               className="h-20 w-full animate-pulse rounded-lg bg-light-secondary retro:bg-retro-secondary multi:bg-multi-primary/60 dark:bg-dark-secondary"
             ></div>
           ))}
-        </div>
+        </div>{' '}
         <div className="flex flex-1 gap-2">
           {[...new Array(2)].map((_, i) => (
             <div

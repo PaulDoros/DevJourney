@@ -30,7 +30,7 @@ export default function AuthenticatedLayout() {
     >
       <Sidebar open={open} setOpen={setOpen}>
         <SidebarBody className="justify-between gap-10">
-          <div className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden">
+          <div className="flex flex-1 flex-col">
             {open ? <Logo /> : <LogoIcon />}
             <div className="mt-8 flex flex-col gap-2">
               {navigationLinks.map((link) => (
