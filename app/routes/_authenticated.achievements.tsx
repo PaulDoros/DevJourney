@@ -19,9 +19,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
     .select('*')
     .order('points', { ascending: false });
 
+  // Calculate total points
+  const totalPoints = userAchievements.reduce(
+    (total, ua) => total + (ua.achievement?.points || 0),
+    0,
+  );
+
   return json({
     userAchievements,
     allAchievements,
+    totalPoints,
   });
 }
 

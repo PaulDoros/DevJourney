@@ -9,4 +9,17 @@ insert into achievements (name, description, points) values
 ('Optimization Guru', 'Implement 3 performance optimizations', 350),
 ('Error Handler', 'Handle all error states correctly', 200),
 ('Accessibility Champion', 'Make components fully accessible', 300),
-('TypeScript Pro', 'Write fully typed components', 250); 
+('TypeScript Pro', 'Write fully typed components', 250);
+
+-- Learning path achievements for Remix features
+insert into achievements (name, description, points) values
+('Remix Explorer', 'Learn and use Remix core features', 250),
+('Data Master', 'Master Remix data loading patterns', 200),
+('Form Wizard', 'Implement advanced form handling', 200),
+('Route Master', 'Create and manage nested routes', 150),
+('Optimization Expert', 'Implement performance optimizations', 300),
+('Type Safety Guardian', 'Use TypeScript effectively with Remix', 250),
+('Layout Artist', 'Create reusable nested layouts', 200),
+('Error Boundary Pro', 'Handle errors gracefully', 150),
+('Loader Legend', 'Master data loading patterns', 300),
+('Action Hero', 'Implement complex form actions', 250); 

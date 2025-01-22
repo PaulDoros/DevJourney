@@ -10,8 +10,17 @@ const ACHIEVEMENT_CATEGORIES = {
     name: 'Getting Started',
     achievements: ['Welcome!', 'Theme Explorer', 'Avatar Customizer'],
   },
+  remix: {
+    name: 'Remix Features',
+    achievements: [
+      'Remix Explorer',
+      'Data Master',
+      'Form Wizard',
+      'Route Master',
+    ],
+  },
   themes: {
-    name: 'Theme Master',
+    name: 'Theme Mastery',
     achievements: ['Theme Master', 'Dark Side', 'Retro Lover', 'Multi Master'],
   },
   avatars: {
@@ -19,12 +28,31 @@ const ACHIEVEMENT_CATEGORIES = {
     achievements: ['Avatar Collector', 'Custom Creator', 'Style Guru'],
   },
   engagement: {
-    name: 'Community',
+    name: 'Community Engagement',
     achievements: [
       'Profile Perfectionist',
       'Early Bird',
       'Active Explorer',
       'Social Butterfly',
+    ],
+  },
+  advanced: {
+    name: 'Advanced Skills',
+    achievements: [
+      'Type Safety Guardian',
+      'Layout Artist',
+      'Error Boundary Pro',
+      'Loader Legend',
+      'Action Hero',
+      'Component Master',
+      'Task Manager',
+      'Theme Artist',
+      'Code Warrior',
+      'Documentation Reader',
+      'Optimization Guru',
+      'Error Handler',
+      'Accessibility Champion',
+      'TypeScript Pro',
     ],
   },
 };

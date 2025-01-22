@@ -1,38 +1,49 @@
 import { lazy, Suspense } from 'react';
-import type { ShowcaseComponent } from '~/types/showcase';
+import { useFetcher } from '@remix-run/react';
+import { Button } from '~/components/ui/Button';
+import { useState } from 'react';
 
 const components = {
-  OptimisticCounter: lazy(() => import('./previews/OptimisticCounter')),
-  UseHookDemo: lazy(() => import('./previews/UseHookDemo')),
-  // Add more components as needed
+  'use-fetcher': lazy(() => import('./previews/UseFetcherDemo')),
+  'loader-data': lazy(() => import('./previews/LoaderDataDemo')),
+  'form-validation': lazy(() => import('./previews/FormValidationDemo')),
+  'nested-routing': lazy(() => import('./previews/NestedRoutingDemo')),
 };
 
 interface ComponentPreviewProps {
-  component: ShowcaseComponent;
-  onInteraction: () => void;
+  componentId: string;
 }
 
-export function ComponentPreview({
-  component,
-  onInteraction,
-}: ComponentPreviewProps) {
-  const PreviewComponent =
-    components[component.preview as keyof typeof components];
+export function ComponentPreview({ componentId }: ComponentPreviewProps) {
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const achievementFetcher = useFetcher();
+
+  const handleInteraction = () => {
+    if (!hasInteracted) {
+      setHasInteracted(true);
+      achievementFetcher.submit(
+        { componentId },
+        { method: 'POST', action: '/api/track-achievement' },
+      );
+    }
+  };
+
+  const Component = components[componentId as keyof typeof components];
+
+  if (!Component) {
+    return <div>Preview not available</div>;
+  }
 
   return (
-    <div
-      className="min-h-[200px] rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800 sm:p-6"
-      onClick={onInteraction}
-    >
-      <Suspense
-        fallback={
-          <div className="flex h-full items-center justify-center">
-            <div className="text-sm text-gray-500">Loading...</div>
-          </div>
-        }
-      >
-        <PreviewComponent />
+    <div className="space-y-4">
+      <Suspense fallback={<div>Loading preview...</div>}>
+        <Component onInteraction={handleInteraction} />
       </Suspense>
+      {hasInteracted && (
+        <div className="mt-2 text-sm text-green-600 dark:text-green-400">
+          ✓ Great job! You've tried this feature.
+        </div>
+      )}
     </div>
   );
 }

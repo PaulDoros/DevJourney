@@ -24,18 +24,18 @@ export async function unlockAchievement(
 export async function getUserAchievements(request: Request, userId: string) {
   const { supabase } = createServerSupabase(request);
 
-  const { data, error } = await supabase
+  const { data: achievements, error } = await supabase
     .from('user_achievements')
-    .select(
-      `
-      *,
-      achievement:achievements(*)
-    `,
-    )
-    .eq('user_id', userId);
+    .select('*, achievement:achievements(*)')
+    .eq('user_id', userId)
+    .order('unlocked_at', { ascending: false });
 
-  if (error) throw error;
-  return data as UserAchievement[];
+  if (error) {
+    console.error('Error fetching achievements:', error);
+    return [];
+  }
+
+  return achievements;
 }
 
 export async function getAvailableAvatars(request: Request, userId: string) {
@@ -89,31 +89,53 @@ export async function getAchievementByName(request: Request, name: string) {
   return data;
 }
 
-export async function checkAndUnlockThemeAchievement(
+export async function checkAndUnlockAchievement(
   request: Request,
   userId: string,
+  achievementName: string,
 ) {
   const { supabase } = createServerSupabase(request);
 
-  // Check if user already has the achievement
-  const existingAchievement = await getAchievementByName(
-    request,
-    'Theme Explorer',
-  );
-  if (!existingAchievement) return null;
-
-  const { data: userAchievement } = await supabase
-    .from('user_achievements')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('achievement_id', existingAchievement.id)
+  // Get the achievement
+  const { data: achievement } = await supabase
+    .from('achievements')
+    .select('id')
+    .eq('name', achievementName)
     .single();
 
-  if (!userAchievement) {
-    return await unlockAchievement(request, userId, existingAchievement.id);
+  if (!achievement) {
+    console.error(`Achievement ${achievementName} not found`);
+    return null;
   }
 
-  return null;
+  // Check if user already has this achievement
+  const { data: existingAchievement } = await supabase
+    .from('user_achievements')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('achievement_id', achievement.id)
+    .single();
+
+  if (existingAchievement) {
+    return existingAchievement;
+  }
+
+  // Unlock the achievement
+  const { data: unlockedAchievement, error } = await supabase
+    .from('user_achievements')
+    .insert({
+      user_id: userId,
+      achievement_id: achievement.id,
+    })
+    .select('*, achievement:achievements(*)')
+    .single();
+
+  if (error) {
+    console.error('Error unlocking achievement:', error);
+    return null;
+  }
+
+  return unlockedAchievement;
 }
 
 export async function checkAndUnlockAvatarAchievement(
