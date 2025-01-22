@@ -20,7 +20,7 @@ export default function AuthenticatedLayout() {
   return (
     <div
       className={cn(
-        'mx-auto flex h-screen w-full flex-1 flex-col overflow-auto overflow-hidden',
+        'mx-auto flex h-screen w-full flex-1 flex-col overflow-auto',
         'border-gray-300 bg-light-secondary',
         'retro:border-retro-text/30 retro:bg-retro-secondary',
         'multi:border-white/50 multi:bg-gradient-to-br multi:from-multi-gradient-1 multi:via-multi-gradient-2 multi:to-multi-gradient-3',

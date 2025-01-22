@@ -106,7 +106,7 @@ export const DesktopSidebar = ({
           className,
         )}
       >
-        {children}
+        {children as React.ReactNode}
       </div>
     );
   }
@@ -122,7 +122,7 @@ export const DesktopSidebar = ({
         className,
       )}
       animate={{
-        width: animate ? (open ? '300px' : '60px') : '300px',
+        width: animate ? (open ? '300px' : '70px') : '300px',
       }}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
@@ -152,8 +152,9 @@ export const MobileSidebar = ({
           'flex h-16 w-full flex-row items-center justify-between px-4 md:hidden',
           'bg-light-secondary',
           'retro:bg-retro-secondary',
-          'multi:bg-multi-primary/60 multi:backdrop-blur-sm',
+          '',
           'dark:bg-dark-secondary',
+          open ? '' : 'multi:bg-multi-primary/60 multi:backdrop-blur-sm',
         )}
         {...props}
       >
@@ -212,12 +213,17 @@ export const SidebarLink = ({
     <motion.span
       initial={false}
       animate={{
+        width: animate ? (open ? 'auto' : 0) : 'auto',
         opacity: animate ? (open ? 1 : 0) : 1,
       }}
-      transition={{ duration: 0.2 }}
-      className="!m-0 inline-block whitespace-pre !p-0 text-sm text-light-text transition duration-150 group-hover/sidebar:translate-x-1 retro:text-retro-text multi:text-white multi:drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] dark:text-dark-text"
+      transition={{
+        duration: 0.2,
+        ease: 'easeInOut',
+      }}
+      className="ml-2 inline-block overflow-hidden whitespace-nowrap text-sm text-light-text transition duration-150 group-hover/sidebar:translate-x-1 retro:text-retro-text multi:text-white multi:drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] dark:text-dark-text"
       style={{
-        display: animate ? (open ? 'inline-block' : 'none') : 'inline-block',
+        display: 'inline-block',
+        visibility: animate && !open ? 'hidden' : 'visible',
       }}
     >
       {link.label}
@@ -225,7 +231,7 @@ export const SidebarLink = ({
   );
 
   const linkClasses = cn(
-    'group/sidebar flex items-center justify-start gap-2 py-2',
+    'group/sidebar flex w-full items-center gap-0 py-2',
     'text-light-text hover:text-light-accent',
     'retro:text-retro-text retro:hover:text-retro-accent',
     'multi:text-white multi:hover:text-white/80',
@@ -235,15 +241,17 @@ export const SidebarLink = ({
 
   const content = (
     <>
-      {link.isProfile && link.user ? (
-        <UserAvatar
-          username={link.user.username}
-          avatar_url={link.user.avatar_url}
-          size="sm"
-        />
-      ) : (
-        link.icon
-      )}
+      <div className="flex-shrink-0">
+        {link.isProfile && link.user ? (
+          <UserAvatar
+            username={link.user.username}
+            avatar_url={link.user.avatar_url}
+            size="sm"
+          />
+        ) : (
+          link.icon
+        )}
+      </div>
       <AnimatedText />
     </>
   );
@@ -251,7 +259,7 @@ export const SidebarLink = ({
   if (link.isForm) {
     return (
       <Form action={link.href} method="post" className={linkClasses}>
-        <button type="submit" className="flex w-full items-center gap-2">
+        <button type="submit" className="flex w-full items-center">
           {content}
         </button>
       </Form>
