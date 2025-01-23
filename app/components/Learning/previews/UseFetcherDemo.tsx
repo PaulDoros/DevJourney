@@ -6,8 +6,13 @@ interface Props {
   onInteraction: () => void;
 }
 
+interface FetcherResponse {
+  success?: boolean;
+  error?: string;
+}
+
 export default function UseFetcherDemo({ onInteraction }: Props) {
-  const fetcher = useFetcher();
+  const fetcher = useFetcher<FetcherResponse>();
   const [liked, setLiked] = useState(false);
   const isOptimistic = fetcher.state === 'submitting';
 

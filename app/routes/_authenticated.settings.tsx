@@ -299,22 +299,7 @@ export default function Settings() {
               <p className="mb-4 text-sm text-light-text/70 retro:text-retro-text/70 multi:text-white/70 dark:text-dark-text/70">
                 Choose your preferred theme. Changes are saved automatically.
               </p>
-              <Form method="post" className="space-y-4">
-                <input type="hidden" name="action" value="change-theme" />
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {['light', 'dark', 'retro', 'multi'].map((theme) => (
-                    <Button
-                      key={theme}
-                      type="submit"
-                      name="theme"
-                      value={theme}
-                      className="w-full capitalize"
-                    >
-                      {theme}
-                    </Button>
-                  ))}
-                </div>
-              </Form>
+              <ThemeSwitcher />
             </div>
           </section>
 

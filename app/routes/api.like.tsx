@@ -8,8 +8,16 @@ export async function action({ request }: ActionFunctionArgs) {
   const { supabase } = createServerSupabase(request);
 
   try {
-    // Simulate liking action
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // Simulate a delay to show optimistic UI
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Randomly succeed or fail to demonstrate error handling
+    if (Math.random() > 0.8) {
+      return json(
+        { error: 'Failed to like. Please try again.' },
+        { status: 500 },
+      );
+    }
 
     // Check if user has earned the "Remix Explorer" achievement
     await checkAndUnlockAchievement(request, user.id, 'Remix Explorer');
