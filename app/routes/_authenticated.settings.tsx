@@ -14,8 +14,13 @@ import {
 import { createServerSupabase } from '~/utils/supabase';
 import { getAvailableAvatars } from '~/services/achievements.server';
 import { getUserAchievements } from '~/services/achievements.server';
-import { checkAndUnlockAvatarAchievement } from '~/services/achievements.server';
+import {
+  checkAndUnlockThemeAchievement,
+  checkAndUnlockAvatarAchievement,
+} from '~/services/achievements.server';
 import type { UserAchievement } from '~/types/achievements';
+import { Form } from '@remix-run/react';
+import { Button } from '~/components/ui/Button';
 
 interface AvatarWithRequirements {
   id: string;
@@ -33,9 +38,10 @@ interface AvatarWithRequirements {
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUser(request);
-  const personalAvatars = await getUserAvatars(user.id);
-  const availableAvatars = await getAvailableAvatars(request, user.id);
+
+  // Get user achievements
   const achievements = await getUserAchievements(request, user.id);
+  const availableAvatars = await getAvailableAvatars(request, user.id);
 
   // Calculate total points
   const totalPoints = achievements.reduce(
@@ -43,24 +49,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
     0,
   );
 
-  // Add requirements to avatars
-  const avatarsWithRequirements: AvatarWithRequirements[] =
-    availableAvatars.map((avatar) => ({
-      ...avatar,
-      requirements: {
-        points: getAvatarPointsRequirement(avatar.id),
-        achievement: getAvatarAchievementRequirement(avatar.id),
-        locked: isAvatarLocked(avatar, achievements, totalPoints),
-        reason: getAvatarLockReason(avatar, achievements, totalPoints),
-      },
-    }));
+  const { supabase } = createServerSupabase(request);
+
+  const { data: preferences } = await supabase
+    .from('user_preferences')
+    .select('*')
+    .eq('user_id', user.id)
+    .single();
 
   return json({
     user,
-    personalAvatars,
-    availableAvatars: avatarsWithRequirements,
+    availableAvatars,
     achievements,
     totalPoints,
+    preferences,
   });
 }
 
@@ -129,7 +131,10 @@ export async function action({ request }: ActionFunctionArgs) {
 
   // Handle theme change achievement
   if (formData.get('action') === 'change-theme') {
-    await checkAndUnlockThemeAchievement(request, user.id);
+    const theme = formData.get('theme') as string;
+    if (theme) {
+      await checkAndUnlockThemeAchievement(request, user.id, theme);
+    }
   }
 
   // Handle avatar change achievement
@@ -275,7 +280,7 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function Settings() {
-  const { user, achievements, totalPoints, availableAvatars } =
+  const { user, preferences, achievements, totalPoints, availableAvatars } =
     useLoaderData<typeof loader>();
 
   return (
@@ -286,16 +291,30 @@ export default function Settings() {
         </h1>
 
         <div className="mx-auto space-y-6 pb-8">
-          <section>
-            <h2 className="mb-4 text-xl font-semibold text-light-text/90 retro:text-retro-text/90 multi:text-white/90 multi:drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] dark:text-dark-text/90">
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold text-light-text/90 retro:text-retro-text/90 multi:text-white/90 dark:text-dark-text/90">
               Theme
             </h2>
-            <div className="rounded-lg border border-gray-300 bg-light-secondary p-6 retro:border-retro-text/30 retro:bg-retro-secondary multi:bg-multi-primary/60 dark:border-gray-600 dark:bg-dark-secondary">
-              <p className="mb-4 text-sm text-light-text/80 retro:text-retro-text/80 multi:text-white/80 multi:drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] dark:text-dark-text/80">
-                Choose your preferred theme appearance. Changes are saved
-                automatically.
+            <div className="rounded-lg border p-4">
+              <p className="mb-4 text-sm text-light-text/70 retro:text-retro-text/70 multi:text-white/70 dark:text-dark-text/70">
+                Choose your preferred theme. Changes are saved automatically.
               </p>
-              <ThemeSwitcher />
+              <Form method="post" className="space-y-4">
+                <input type="hidden" name="action" value="change-theme" />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {['light', 'dark', 'retro', 'multi'].map((theme) => (
+                    <Button
+                      key={theme}
+                      type="submit"
+                      name="theme"
+                      value={theme}
+                      className="w-full capitalize"
+                    >
+                      {theme}
+                    </Button>
+                  ))}
+                </div>
+              </Form>
             </div>
           </section>
 

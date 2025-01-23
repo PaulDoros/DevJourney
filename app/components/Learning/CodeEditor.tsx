@@ -33,7 +33,7 @@ export function CodeEditor({
   };
 
   // Call onSuccess only when code is validated successfully
-  if (fetcher.data?.success && !fetcher.state === 'submitting') {
+  if (fetcher.data?.success && fetcher.state === 'idle') {
     onSuccess();
   }
 

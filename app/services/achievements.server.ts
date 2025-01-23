@@ -164,3 +164,47 @@ export async function checkAndUnlockAvatarAchievement(
 
   return null;
 }
+
+export async function checkAndUnlockThemeAchievement(
+  request: Request,
+  userId: string,
+  themeName: string,
+) {
+  const themeAchievements = {
+    dark: 'Dark Side',
+    retro: 'Retro Lover',
+    multi: 'Multi Master',
+  };
+
+  const achievementName =
+    themeAchievements[themeName as keyof typeof themeAchievements];
+
+  if (!achievementName) {
+    return null;
+  }
+
+  // First unlock the specific theme achievement
+  const themeAchievement = await checkAndUnlockAchievement(
+    request,
+    userId,
+    achievementName,
+  );
+
+  // Check if user has unlocked all theme achievements
+  const { supabase } = createServerSupabase(request);
+  const { data: unlockedThemes } = await supabase
+    .from('user_achievements')
+    .select('achievement:achievements(name)')
+    .eq('user_id', userId)
+    .in('achievement.name', Object.values(themeAchievements));
+
+  // If all theme achievements are unlocked, unlock the Theme Master achievement
+  if (
+    unlockedThemes &&
+    unlockedThemes.length === Object.keys(themeAchievements).length
+  ) {
+    await checkAndUnlockAchievement(request, userId, 'Theme Master');
+  }
+
+  return themeAchievement;
+}
