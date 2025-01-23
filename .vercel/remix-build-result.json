@@ -11,10 +11,16 @@
     },
     "routeIdToServerBundleId": {
       "root": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/_authenticated.achievements": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/_authenticated.settings": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/_authenticated.profile": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/api.track-achievement": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/_authenticated._index": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/api.validate-code": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/actions.settings": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/auth.callback": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/api.theme": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/api.like": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/logout": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/guest": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/login": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0"
@@ -27,6 +33,13 @@
         "config": {
           "runtime": "nodejs"
         }
+      },
+      "routes/_authenticated.achievements": {
+        "file": "app/routes/_authenticated.achievements.tsx",
+        "id": "routes/_authenticated.achievements",
+        "path": "achievements",
+        "parentId": "routes/_authenticated",
+        "config": {}
       },
       "routes/_authenticated.settings": {
         "file": "app/routes/_authenticated.settings.tsx",
@@ -42,11 +55,32 @@
         "parentId": "routes/_authenticated",
         "config": {}
       },
+      "routes/api.track-achievement": {
+        "file": "app/routes/api.track-achievement.tsx",
+        "id": "routes/api.track-achievement",
+        "path": "api/track-achievement",
+        "parentId": "root",
+        "config": {}
+      },
       "routes/_authenticated._index": {
         "file": "app/routes/_authenticated._index.tsx",
         "id": "routes/_authenticated._index",
         "index": true,
         "parentId": "routes/_authenticated",
+        "config": {}
+      },
+      "routes/api.validate-code": {
+        "file": "app/routes/api.validate-code.tsx",
+        "id": "routes/api.validate-code",
+        "path": "api/validate-code",
+        "parentId": "root",
+        "config": {}
+      },
+      "routes/actions.settings": {
+        "file": "app/routes/actions.settings.tsx",
+        "id": "routes/actions.settings",
+        "path": "actions/settings",
+        "parentId": "root",
         "config": {}
       },
       "routes/_authenticated": {
@@ -59,6 +93,20 @@
         "file": "app/routes/auth.callback.tsx",
         "id": "routes/auth.callback",
         "path": "auth/callback",
+        "parentId": "root",
+        "config": {}
+      },
+      "routes/api.theme": {
+        "file": "app/routes/api.theme.tsx",
+        "id": "routes/api.theme",
+        "path": "api/theme",
+        "parentId": "root",
+        "config": {}
+      },
+      "routes/api.like": {
+        "file": "app/routes/api.like.tsx",
+        "id": "routes/api.like",
+        "path": "api/like",
         "parentId": "root",
         "config": {}
       },
@@ -106,6 +154,12 @@
         "id": "root",
         "file": "root.tsx"
       },
+      "routes/_authenticated.achievements": {
+        "file": "routes/_authenticated.achievements.tsx",
+        "id": "routes/_authenticated.achievements",
+        "path": "achievements",
+        "parentId": "routes/_authenticated"
+      },
       "routes/_authenticated.settings": {
         "file": "routes/_authenticated.settings.tsx",
         "id": "routes/_authenticated.settings",
@@ -118,11 +172,29 @@
         "path": "profile",
         "parentId": "routes/_authenticated"
       },
+      "routes/api.track-achievement": {
+        "file": "routes/api.track-achievement.tsx",
+        "id": "routes/api.track-achievement",
+        "path": "api/track-achievement",
+        "parentId": "root"
+      },
       "routes/_authenticated._index": {
         "file": "routes/_authenticated._index.tsx",
         "id": "routes/_authenticated._index",
         "index": true,
         "parentId": "routes/_authenticated"
+      },
+      "routes/api.validate-code": {
+        "file": "routes/api.validate-code.tsx",
+        "id": "routes/api.validate-code",
+        "path": "api/validate-code",
+        "parentId": "root"
+      },
+      "routes/actions.settings": {
+        "file": "routes/actions.settings.tsx",
+        "id": "routes/actions.settings",
+        "path": "actions/settings",
+        "parentId": "root"
       },
       "routes/_authenticated": {
         "file": "routes/_authenticated.tsx",
@@ -133,6 +205,18 @@
         "file": "routes/auth.callback.tsx",
         "id": "routes/auth.callback",
         "path": "auth/callback",
+        "parentId": "root"
+      },
+      "routes/api.theme": {
+        "file": "routes/api.theme.tsx",
+        "id": "routes/api.theme",
+        "path": "api/theme",
+        "parentId": "root"
+      },
+      "routes/api.like": {
+        "file": "routes/api.like.tsx",
+        "id": "routes/api.like",
+        "path": "api/like",
         "parentId": "root"
       },
       "routes/logout": {
