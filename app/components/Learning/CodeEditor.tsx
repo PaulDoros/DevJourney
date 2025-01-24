@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Highlight } from 'prism-react-renderer';
 import { Button } from '~/components/ui/Button';
 import { useFetcher } from '@remix-run/react';
@@ -23,6 +23,7 @@ export function CodeEditor({
 }: CodeEditorProps) {
   const [code, setCode] = useState(initialCode);
   const [isEditing, setIsEditing] = useState(false);
+  const [hasTriggeredSuccess, setHasTriggeredSuccess] = useState(false);
   const fetcher = useFetcher<ValidateCodeResponse>();
 
   const handleRunCode = () => {
@@ -32,10 +33,22 @@ export function CodeEditor({
     );
   };
 
-  // Call onSuccess only when code is validated successfully
-  if (fetcher.data?.success && fetcher.state === 'idle') {
-    onSuccess();
-  }
+  // Reset success trigger when component changes
+  useEffect(() => {
+    setHasTriggeredSuccess(false);
+  }, [componentId]);
+
+  // Call onSuccess only once when code is validated successfully
+  useEffect(() => {
+    if (
+      fetcher.data?.success &&
+      fetcher.state === 'idle' &&
+      !hasTriggeredSuccess
+    ) {
+      setHasTriggeredSuccess(true);
+      onSuccess();
+    }
+  }, [fetcher.data?.success, fetcher.state, hasTriggeredSuccess, onSuccess]);
 
   const feedbackMessage = fetcher.data?.error || fetcher.data?.message;
   const isSuccess = fetcher.data?.success;

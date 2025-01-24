@@ -9,12 +9,12 @@
  * - Achievement tracking
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/Tabs';
-import { CodePreview } from '~/components/Learning/CodePreview';
+
 import { ComponentPreview } from '~/components/Learning/ComponentPreview';
-import { useFetcher } from '@remix-run/react';
-import { Button } from '~/components/ui/Button';
+import { useFetcher, useLoaderData } from '@remix-run/react';
+
 import { CodeEditor } from '~/components/Learning/CodeEditor';
 
 interface ShowcaseComponent {
@@ -22,7 +22,21 @@ interface ShowcaseComponent {
   name: string;
   description: string;
   code: string;
-  achievement?: string;
+}
+
+interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  points: number;
+  component_id: string;
+  icon_url: string | null;
+}
+
+interface UserAchievement {
+  id: string;
+  achievement: Achievement | null;
+  unlocked_at: string;
 }
 
 const SHOWCASE_COMPONENTS: ShowcaseComponent[] = [
@@ -34,7 +48,6 @@ const SHOWCASE_COMPONENTS: ShowcaseComponent[] = [
     • Handle optimistic UI updates
     • Submit forms without full page reloads
     • Make API calls in the background`,
-    achievement: 'Remix Explorer',
     code: `function LikeButton() {
   const fetcher = useFetcher();
   const isOptimistic = fetcher.state === 'submitting';
@@ -56,7 +69,6 @@ const SHOWCASE_COMPONENTS: ShowcaseComponent[] = [
     • SEO-friendly content
     • Initial page load data
     • Secure data access with server-side validation`,
-    achievement: 'Data Master',
     code: `export async function loader() {
   // Server-side code
   const data = await db.getItems();
@@ -77,7 +89,6 @@ export default function Items() {
     • File uploads
     • Complex form submissions
     • Progressive enhancement`,
-    achievement: 'Form Wizard',
     code: `export async function action({ request }: ActionArgs) {
   const form = await request.formData();
   const email = form.get('email');
@@ -101,7 +112,6 @@ export default function Items() {
     • Parallel data loading
     • URL-driven state management
     • Complex UI hierarchies`,
-    achievement: 'Route Master',
     code: `// routes/_app.tsx (Parent Layout)
 export default function AppLayout() {
   return (
@@ -119,18 +129,41 @@ export default function Dashboard() {
   },
 ];
 
+interface ComponentShowcaseProps {
+  userAchievements: UserAchievement[];
+}
+
 export function ComponentShowcase() {
   const [activeComponent, setActiveComponent] = useState(
     SHOWCASE_COMPONENTS[0],
   );
   const achievementFetcher = useFetcher();
+  const { achievements } = useLoaderData<{
+    achievements: UserAchievement[];
+  }>();
 
-  const handleInteraction = (componentId: string) => {
-    achievementFetcher.submit(
-      { componentId },
-      { method: 'POST', action: '/api/track-achievement' },
-    );
-  };
+  // Debounced achievement tracking
+  const handleCodeSuccess = useCallback(
+    (componentId: string) => {
+      // Check if user already has this achievement
+      const hasAchievement = achievements.some(
+        (ua) => ua.achievement?.component_id === componentId,
+      );
+
+      // Only make the API request if the achievement isn't already unlocked
+      // and there's no pending request
+      if (!hasAchievement && achievementFetcher.state !== 'submitting') {
+        // Add a small delay to prevent rapid-fire requests
+        setTimeout(() => {
+          achievementFetcher.submit(
+            { componentId },
+            { method: 'POST', action: '/api/track-achievement' },
+          );
+        }, 100);
+      }
+    },
+    [achievements, achievementFetcher],
+  );
 
   return (
     <div className="rounded-lg border border-gray-300 bg-light-secondary p-6 retro:border-retro-text/30 retro:bg-retro-secondary multi:bg-multi-primary/60 dark:border-gray-600 dark:bg-dark-secondary">
@@ -142,10 +175,7 @@ export function ComponentShowcase() {
               <TabsTrigger
                 key={component.id}
                 value={component.id}
-                onClick={() => {
-                  setActiveComponent(component);
-                  handleInteraction(component.id);
-                }}
+                onClick={() => setActiveComponent(component)}
               >
                 {component.name}
               </TabsTrigger>
@@ -171,7 +201,7 @@ export function ComponentShowcase() {
                 <CodeEditor
                   initialCode={component.code}
                   componentId={component.id}
-                  onSuccess={() => handleInteraction(component.id)}
+                  onSuccess={() => handleCodeSuccess(component.id)}
                 />
               </div>
             </div>

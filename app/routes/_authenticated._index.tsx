@@ -11,15 +11,36 @@ import { requireUser } from '~/utils/session.server';
 import { getUserAchievements } from '~/services/achievements.server';
 import { AchievementsProgress } from '~/components/Achievements/AchievementsProgress';
 import { Link } from '@remix-run/react';
+import { createServerSupabase } from '~/utils/supabase';
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUser(request);
-  const achievements = await getUserAchievements(request, user.id);
+  const { supabase } = createServerSupabase(request);
+
+  // Get user achievements with component_id
+  const { data: achievements } = await supabase
+    .from('user_achievements')
+    .select(
+      `
+      id,
+      unlocked_at,
+      achievement:achievements (
+        id,
+        name,
+        description,
+        points,
+        component_id,
+        icon_url
+      )
+    `,
+    )
+    .eq('user_id', user.id)
+    .order('unlocked_at', { ascending: false });
 
   return json({
     user,
-    achievements,
-    totalPoints: achievements.reduce(
+    achievements: achievements || [],
+    totalPoints: (achievements || []).reduce(
       (total, ua) => total + (ua.achievement?.points || 0),
       0,
     ),
