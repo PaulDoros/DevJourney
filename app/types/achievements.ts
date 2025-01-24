@@ -3,16 +3,17 @@ export interface Achievement {
   name: string;
   description: string;
   points: number;
-  iconUrl: string | null;
-  createdAt: string;
+  component_id: string | null;
+  icon_url: string | null;
+  created_at: string;
 }
 
 export interface UserAchievement {
   id: string;
-  userId: string;
-  achievementId: string;
-  unlockedAt: string;
-  achievement?: Achievement;
+  user_id: string;
+  achievement_id: string;
+  unlocked_at: string;
+  achievement: Achievement;
 }
 
 export interface Avatar {
@@ -22,4 +23,15 @@ export interface Avatar {
   url: string;
   achievementId: string | null;
   createdAt: string;
+}
+
+export interface AchievementResponse {
+  user: {
+    id: string;
+    username: string;
+    avatar_url: string | null;
+    [key: string]: any;
+  };
+  achievements: UserAchievement[];
+  totalPoints: number;
 }

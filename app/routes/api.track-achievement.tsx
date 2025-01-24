@@ -1,6 +1,8 @@
 import { json, type ActionFunctionArgs } from '@remix-run/node';
 import { requireUser } from '~/utils/session.server';
 import { createServerSupabase } from '~/utils/supabase';
+import { typedjson } from 'remix-typedjson';
+import type { Achievement } from '~/types/achievements';
 
 export async function action({ request }: ActionFunctionArgs) {
   const user = await requireUser(request);
@@ -18,7 +20,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
     if (achievementError || !achievement) {
       console.error(`Achievement ${componentId} not found`);
-      return json({ error: 'Achievement not found' }, { status: 404 });
+      return typedjson({ error: 'Achievement not found' }, { status: 404 });
     }
 
     // Check if user already has this achievement recently
@@ -36,7 +38,7 @@ export async function action({ request }: ActionFunctionArgs) {
         Date.now() - new Date(existingAchievement.created_at).getTime();
       if (timeSinceUnlock < 5000) {
         // 5 seconds cooldown
-        return json({
+        return typedjson({
           success: true,
           message: 'Achievement already unlocked recently',
         });
@@ -54,7 +56,7 @@ export async function action({ request }: ActionFunctionArgs) {
     if (insertError) {
       if (insertError.code === '23505') {
         // Unique violation
-        return json({
+        return typedjson({
           success: true,
           message: 'Achievement already unlocked',
         });
@@ -62,12 +64,12 @@ export async function action({ request }: ActionFunctionArgs) {
       throw insertError;
     }
 
-    return json({
+    return typedjson({
       success: true,
       message: 'Achievement unlocked!',
     });
   } catch (error) {
     console.error('Achievement tracking error:', error);
-    return json({ error: 'Failed to track achievement' }, { status: 500 });
+    return typedjson({ error: 'Failed to track achievement' }, { status: 500 });
   }
 }

@@ -77,6 +77,9 @@ importers:
       react-toastify:
         specifier: ^11.0.2
         version: 11.0.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      remix-typedjson:
+        specifier: ^0.4.1
+        version: 0.4.1(@remix-run/react@2.15.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.1.6))(@remix-run/server-runtime@2.15.2(typescript@5.1.6))(react@18.3.1)
       remix-utils:
         specifier: ^8.1.0
         version: 8.1.0(react@18.3.1)
@@ -3290,6 +3293,13 @@ packages:
 
   remark-rehype@10.1.0:
     resolution: {integrity: sha512-EFmR5zppdBp0WQeDVZ/b66CWJipB2q2VLNFMabzDSGR66Z2fQii83G5gTBbgGEnEEA0QRussvrFHxk1HWGJskw==}
+
+  remix-typedjson@0.4.1:
+    resolution: {integrity: sha512-AL6LdNajqce1Exy6aB1bD6GYMk90S6H31e8kDCi6jLgBi4K82Ph604lqGGzalswaPPYckYK+NZzgvhWEY7JCDw==}
+    peerDependencies:
+      '@remix-run/react': ^1.16.0 || ^2.0
+      '@remix-run/server-runtime': ^1.16.0 || ^2.0
+      react: ^17.0.2 || ^18.0.0
 
   remix-utils@8.1.0:
     resolution: {integrity: sha512-k44K4FOPyMv6QQ+yaQrCrXdnzkKE1b86ZUODAK5fvmWsmi7ntZAAA+Ods+nzNAxFEAPDTreCzl7cGWnxWd6ibw==}
@@ -7513,6 +7523,12 @@ snapshots:
       '@types/mdast': 3.0.15
       mdast-util-to-hast: 12.3.0
       unified: 10.1.2
+
+  remix-typedjson@0.4.1(@remix-run/react@2.15.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.1.6))(@remix-run/server-runtime@2.15.2(typescript@5.1.6))(react@18.3.1):
+    dependencies:
+      '@remix-run/react': 2.15.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.1.6)
+      '@remix-run/server-runtime': 2.15.2(typescript@5.1.6)
+      react: 18.3.1
 
   remix-utils@8.1.0(react@18.3.1):
     dependencies:

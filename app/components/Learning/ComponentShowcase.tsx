@@ -13,9 +13,11 @@ import { useState, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/Tabs';
 
 import { ComponentPreview } from '~/components/Learning/ComponentPreview';
-import { useFetcher, useLoaderData } from '@remix-run/react';
+import { useFetcher } from '@remix-run/react';
 
 import { CodeEditor } from '~/components/Learning/CodeEditor';
+import { useTypedLoaderData } from 'remix-typedjson';
+import type { UserAchievement } from '~/types/achievements';
 
 interface ShowcaseComponent {
   id: string;
@@ -31,12 +33,6 @@ interface Achievement {
   points: number;
   component_id: string;
   icon_url: string | null;
-}
-
-interface UserAchievement {
-  id: string;
-  achievement: Achievement | null;
-  unlocked_at: string;
 }
 
 const SHOWCASE_COMPONENTS: ShowcaseComponent[] = [
@@ -138,7 +134,7 @@ export function ComponentShowcase() {
     SHOWCASE_COMPONENTS[0],
   );
   const achievementFetcher = useFetcher();
-  const { achievements } = useLoaderData<{
+  const { achievements } = useTypedLoaderData<{
     achievements: UserAchievement[];
   }>();
 
