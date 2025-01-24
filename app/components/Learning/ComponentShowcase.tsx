@@ -133,33 +133,6 @@ export function ComponentShowcase() {
   const [activeComponent, setActiveComponent] = useState(
     SHOWCASE_COMPONENTS[0],
   );
-  const achievementFetcher = useFetcher();
-  const { achievements } = useTypedLoaderData<{
-    achievements: UserAchievement[];
-  }>();
-
-  // Debounced achievement tracking
-  const handleCodeSuccess = useCallback(
-    (componentId: string) => {
-      // Check if user already has this achievement
-      const hasAchievement = achievements.some(
-        (ua) => ua.achievement?.component_id === componentId,
-      );
-
-      // Only make the API request if the achievement isn't already unlocked
-      // and there's no pending request
-      if (!hasAchievement && achievementFetcher.state !== 'submitting') {
-        // Add a small delay to prevent rapid-fire requests
-        setTimeout(() => {
-          achievementFetcher.submit(
-            { componentId },
-            { method: 'POST', action: '/api/track-achievement' },
-          );
-        }, 100);
-      }
-    },
-    [achievements, achievementFetcher],
-  );
 
   return (
     <div className="rounded-lg border border-gray-300 bg-light-secondary p-6 retro:border-retro-text/30 retro:bg-retro-secondary multi:bg-multi-primary/60 dark:border-gray-600 dark:bg-dark-secondary">
@@ -181,7 +154,6 @@ export function ComponentShowcase() {
 
         {SHOWCASE_COMPONENTS.map((component) => (
           <TabsContent key={component.id} value={component.id}>
-            {/* Stack on mobile, grid on desktop */}
             <div className="space-y-6 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0">
               {/* Live Preview */}
               <div className="space-y-4">
@@ -191,13 +163,12 @@ export function ComponentShowcase() {
                 </div>
               </div>
 
-              {/* Code Editor */}
+              {/* Code Display */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Try it yourself</h3>
+                <h3 className="text-lg font-semibold">Example Code</h3>
                 <CodeEditor
                   initialCode={component.code}
                   componentId={component.id}
-                  onSuccess={() => handleCodeSuccess(component.id)}
                 />
               </div>
             </div>

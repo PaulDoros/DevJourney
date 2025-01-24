@@ -5,22 +5,28 @@ import {
   useNavigation,
 } from '@remix-run/react';
 import { UserAvatar } from '~/components/UserAvatar';
-import type { User } from '~/types/user';
 import { cn } from '~/lib/utils';
 import { ANIMATED_AVATARS, STATIC_AVATARS } from '~/constants/avatars';
 import type { AvatarPreset } from '~/constants/avatars';
 import { useState } from 'react';
 import { Modal } from '~/components/ui/Modal';
-import { Button } from '~/components/ui/Button';
-import type { UserAchievement } from '~/types/achievements';
+
 import { AnimatedAvatar } from '~/components/AnimatedAvatar';
 
-interface AvatarWithRequirements {
+// Define a simplified achievement type for what we actually need
+interface Achievement {
   id: string;
-  title: string;
-  type: string;
-  url: string;
-  preview_url: string;
+  name: string;
+  description: string;
+  points: number;
+}
+
+interface UserAchievementSimple {
+  id: string;
+  achievement: Achievement;
+}
+
+interface AvatarWithRequirements extends AvatarPreset {
   requirements?: {
     points?: number;
     achievement?: string;
@@ -30,15 +36,19 @@ interface AvatarWithRequirements {
 }
 
 interface AvatarSettingsProps {
-  user: User;
-  availableAvatars: AvatarWithRequirements[];
-  totalPoints: number;
-  achievements: UserAchievement[];
+  user: {
+    id: string;
+    username: string;
+    is_guest: boolean;
+    avatar_url: string | null;
+  };
+  achievements: UserAchievementSimple[];
 }
 
-function isAvatarLocked(
+// Move helper functions outside the component
+function checkAvatarLock(
   avatar: AvatarPreset,
-  achievements: UserAchievement[],
+  achievements: UserAchievementSimple[],
   totalPoints: number,
 ): boolean {
   if (!avatar.requirements) return false;
@@ -48,16 +58,16 @@ function isAvatarLocked(
   if (points && totalPoints < points) return true;
   if (
     achievement &&
-    !achievements.some((ua) => ua.achievement?.name === achievement)
+    !achievements.some((ua) => ua.achievement.name === achievement)
   )
     return true;
 
   return false;
 }
 
-function getAvatarLockReason(
+function getLockReason(
   avatar: AvatarPreset,
-  achievements: UserAchievement[],
+  achievements: UserAchievementSimple[],
   totalPoints: number,
 ): string | undefined {
   if (!avatar.requirements) return undefined;
@@ -69,7 +79,7 @@ function getAvatarLockReason(
   }
   if (
     achievement &&
-    !achievements.some((ua) => ua.achievement?.name === achievement)
+    !achievements.some((ua) => ua.achievement.name === achievement)
   ) {
     return `Unlock "${achievement}" achievement first`;
   }
@@ -97,23 +107,32 @@ function LockOverlay({ lockReason }: { lockReason: string | undefined }) {
   );
 }
 
-export function AvatarSettings({
-  user,
-  availableAvatars,
-  totalPoints,
-  achievements,
-}: AvatarSettingsProps) {
+export function AvatarSettings({ user, achievements }: AvatarSettingsProps) {
   const submit = useSubmit();
   const navigation = useNavigation();
   const isUploading = navigation.state === 'submitting';
+
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDeletePersonalModal, setShowDeletePersonalModal] = useState<{
     show: boolean;
     avatarName?: string;
   }>({ show: false });
   const { personalAvatars = [] } = useLoaderData<{
-    personalAvatars: Array<{ url: string; name: string }>;
+    personalAvatars: Array<{
+      name: string;
+      url: string;
+      size: number;
+      created_at: string;
+    }>;
   }>();
+
+  // Calculate total points from achievements
+  const totalPoints = achievements.reduce(
+    (total, ua) => total + (ua.achievement?.points || 0),
+    0,
+  );
+
+  // Calculate available avatars with requirements
 
   return (
     <section>
@@ -126,39 +145,7 @@ export function AvatarSettings({
         </span>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {availableAvatars.map((avatar) => (
-          <div
-            key={avatar.id}
-            className={cn(
-              'relative rounded-lg border p-4',
-              avatar.requirements?.locked
-                ? 'border-gray-200 opacity-50'
-                : 'border-light-accent/20',
-            )}
-          >
-            <div className="aspect-square">{/* Avatar preview */}</div>
-
-            {avatar.requirements?.locked ? (
-              <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/50 p-4">
-                <div className="text-center text-sm text-white">
-                  <span className="text-2xl">🔒</span>
-                  <p className="mt-2">{avatar.requirements.reason}</p>
-                </div>
-              </div>
-            ) : (
-              <Button
-                type="submit"
-                name="action"
-                value="select-preset"
-                className="mt-2 w-full"
-              >
-                Select Avatar
-              </Button>
-            )}
-          </div>
-        ))}
-      </div>
+      {/* Personal Avatars Grid */}
 
       {/* Current Avatar Section */}
 
@@ -193,82 +180,83 @@ export function AvatarSettings({
         </div>
 
         {/* Personal Avatars Grid */}
-        {personalAvatars.length > 0 && (
-          <div className="mt-8 border-t border-gray-200 pt-8 dark:border-gray-700">
-            <h3 className="mb-4 text-lg font-medium">Your Uploaded Pictures</h3>
-            <p className="pb-2 text-sm text-light-text/80 retro:text-retro-text/80 multi:text-white/80 dark:text-dark-text/80">
-              Upload new pictures to your collection or choose from presets.
-              Supported formats: JPG, PNG, GIF (max 5MB)
-            </p>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
-              <Form
-                method="post"
-                encType="multipart/form-data"
-                className="max-w-[120px]"
-              >
-                <input
-                  type="file"
-                  name="avatar"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  id="avatar-upload"
-                  onChange={(e) => {
-                    if (
-                      e.target.form &&
-                      e.target.files &&
-                      e.target.files.length > 0
-                    ) {
-                      // Check file sizes before submitting
-                      const hasLargeFile = Array.from(e.target.files).some(
-                        (file) => file.size > 5 * 1024 * 1024,
+
+        <div className="mt-8 border-t border-gray-200 pt-8 dark:border-gray-700">
+          <h3 className="mb-4 text-lg font-medium">Your Uploaded Pictures</h3>
+          <p className="pb-2 text-sm text-light-text/80 retro:text-retro-text/80 multi:text-white/80 dark:text-dark-text/80">
+            Upload new pictures to your collection or choose from presets.
+            Supported formats: JPG, PNG, GIF (max 5MB)
+          </p>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+            <Form
+              method="post"
+              encType="multipart/form-data"
+              className="max-w-[120px]"
+            >
+              <input
+                type="file"
+                name="avatar"
+                accept="image/*"
+                multiple
+                className="hidden"
+                id="avatar-upload"
+                onChange={(e) => {
+                  if (
+                    e.target.form &&
+                    e.target.files &&
+                    e.target.files.length > 0
+                  ) {
+                    // Check file sizes before submitting
+                    const hasLargeFile = Array.from(e.target.files).some(
+                      (file) => file.size > 5 * 1024 * 1024,
+                    );
+
+                    if (hasLargeFile) {
+                      alert(
+                        'One or more files are too large. Maximum size is 5MB.',
                       );
-
-                      if (hasLargeFile) {
-                        alert(
-                          'One or more files are too large. Maximum size is 5MB.',
-                        );
-                        return;
-                      }
-
-                      submit(e.target.form);
+                      return;
                     }
-                  }}
-                  disabled={isUploading}
-                />
-                <label
-                  htmlFor="avatar-upload"
-                  className={cn(
-                    'group relative flex aspect-square w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50/50 transition-all duration-200',
-                    'hover:border-light-accent hover:bg-light-accent/5 active:scale-95',
-                    'retro:hover:border-retro-accent retro:hover:bg-retro-accent/5',
-                    'multi:hover:border-white/50 multi:hover:bg-white/5',
-                    'dark:border-gray-600 dark:bg-gray-800/30 dark:hover:border-dark-accent dark:hover:bg-dark-accent/5',
-                    isUploading && 'cursor-not-allowed opacity-50',
-                  )}
-                >
-                  <div className="flex flex-col items-center gap-2 p-2 text-center">
-                    <svg
-                      className="h-8 w-8 text-gray-400 group-hover:text-light-accent retro:group-hover:text-retro-accent multi:group-hover:text-white/90 dark:group-hover:text-dark-accent"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                      />
-                    </svg>
-                    <span className="text-xs font-medium text-gray-500 group-hover:text-light-accent retro:group-hover:text-retro-accent multi:group-hover:text-white/90 dark:text-gray-400 dark:group-hover:text-dark-accent">
-                      {isUploading ? 'Uploading...' : 'Upload'}
-                    </span>
-                    <span className="text-[10px] text-gray-400">Max 5MB</span>
-                  </div>
-                </label>
-              </Form>
-              {personalAvatars.map((avatar) => (
+
+                    submit(e.target.form);
+                  }
+                }}
+                disabled={isUploading}
+              />
+              <label
+                htmlFor="avatar-upload"
+                className={cn(
+                  'group relative flex aspect-square w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50/50 transition-all duration-200',
+                  'hover:border-light-accent hover:bg-light-accent/5 active:scale-95',
+                  'retro:hover:border-retro-accent retro:hover:bg-retro-accent/5',
+                  'multi:hover:border-white/50 multi:hover:bg-white/5',
+                  'dark:border-gray-600 dark:bg-gray-800/30 dark:hover:border-dark-accent dark:hover:bg-dark-accent/5',
+                  isUploading && 'cursor-not-allowed opacity-50',
+                )}
+              >
+                <div className="flex flex-col items-center gap-2 p-2 text-center">
+                  <svg
+                    className="h-8 w-8 text-gray-400 group-hover:text-light-accent retro:group-hover:text-retro-accent multi:group-hover:text-white/90 dark:group-hover:text-dark-accent"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    />
+                  </svg>
+                  <span className="text-xs font-medium text-gray-500 group-hover:text-light-accent retro:group-hover:text-retro-accent multi:group-hover:text-white/90 dark:text-gray-400 dark:group-hover:text-dark-accent">
+                    {isUploading ? 'Uploading...' : 'Upload'}
+                  </span>
+                  <span className="text-[10px] text-gray-400">Max 5MB</span>
+                </div>
+              </label>
+            </Form>
+            {personalAvatars.length > 0 &&
+              personalAvatars.map((avatar) => (
                 <div
                   key={avatar.name}
                   className="group relative aspect-square w-full max-w-[120px]"
@@ -350,9 +338,8 @@ export function AvatarSettings({
                   </div>
                 </div>
               ))}
-            </div>
           </div>
-        )}
+        </div>
 
         {/* Preset Avatars Section */}
         <div className="mt-8 border-t border-gray-200 pt-8 dark:border-gray-700">
@@ -367,12 +354,12 @@ export function AvatarSettings({
               </h4>
               <div className="grid grid-cols-4 gap-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
                 {ANIMATED_AVATARS.map((avatar) => {
-                  const isLocked = isAvatarLocked(
+                  const isLocked = checkAvatarLock(
                     avatar,
                     achievements,
                     totalPoints,
                   );
-                  const lockReason = getAvatarLockReason(
+                  const lockReason = getLockReason(
                     avatar,
                     achievements,
                     totalPoints,
@@ -427,12 +414,12 @@ export function AvatarSettings({
               </h4>
               <div className="grid grid-cols-4 gap-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
                 {STATIC_AVATARS.map((avatar) => {
-                  const isLocked = isAvatarLocked(
+                  const isLocked = checkAvatarLock(
                     avatar,
                     achievements,
                     totalPoints,
                   );
-                  const lockReason = getAvatarLockReason(
+                  const lockReason = getLockReason(
                     avatar,
                     achievements,
                     totalPoints,
@@ -483,7 +470,6 @@ export function AvatarSettings({
           </div>
         </div>
       </div>
-
       {/* Add confirmation modal */}
       <Modal
         isOpen={showDeleteModal}

@@ -1,55 +1,76 @@
 import { ThemeSwitcher } from '~/components/ThemeSwitcher';
-import { useTheme } from '~/utils/theme-provider';
 import { PageLayout } from '~/components/layouts/PageLayout';
-import { useLoaderData } from '@remix-run/react';
-import { LoaderFunctionArgs, ActionFunctionArgs, json } from '@remix-run/node';
+import { LoaderFunctionArgs, ActionFunctionArgs } from '@remix-run/node';
 import { requireUser } from '~/utils/session.server';
 import { AvatarSettings } from '~/components/Settings/AvatarSettings';
-import { supabase } from '~/utils/supabase.server';
 import {
-  getUserAvatars,
   deleteOldAvatar,
-  uploadAvatar,
+  getUserAvatars,
 } from '~/utils/supabase-storage.server';
 import { createServerSupabase } from '~/utils/supabase';
-import { getAvailableAvatars } from '~/services/achievements.server';
-import { getUserAchievements } from '~/services/achievements.server';
-import {
-  checkAndUnlockThemeAchievement,
-  checkAndUnlockAvatarAchievement,
-} from '~/services/achievements.server';
-import type { UserAchievement } from '~/types/achievements';
-import { Form } from '@remix-run/react';
-import { Button } from '~/components/ui/Button';
+import { checkAndUnlockAvatarAchievement } from '~/services/achievements.server';
+import { typedjson, useTypedLoaderData } from 'remix-typedjson';
 
-interface AvatarWithRequirements {
-  id: string;
-  title: string;
-  type: string;
-  url: string;
-  preview_url: string;
-  requirements?: {
-    points?: number;
-    achievement?: string;
-    locked: boolean;
-    reason?: string;
+// Define types for theme-related data
+interface ThemeAchievement {
+  achievement: {
+    id: string;
+    name: string;
   };
+}
+
+interface ThemeHistory {
+  theme: string;
+  created_at: string;
+}
+
+interface LoaderData {
+  user: {
+    id: string;
+    username: string;
+    is_guest: boolean;
+    avatar_url: string | null;
+  };
+  preferences: {
+    theme: string;
+  } | null;
+  achievements: Array<{
+    id: string;
+    achievement: {
+      id: string;
+      name: string;
+      description: string;
+      points: number;
+    };
+  }>;
+  personalAvatars: Array<{
+    name: string;
+    url: string;
+    size: number;
+    created_at: string;
+  }>;
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUser(request);
-
-  // Get user achievements
-  const achievements = await getUserAchievements(request, user.id);
-  const availableAvatars = await getAvailableAvatars(request, user.id);
-
-  // Calculate total points
-  const totalPoints = achievements.reduce(
-    (total, ua) => total + (ua.achievement?.points || 0),
-    0,
-  );
-
+  const personalAvatars = await getUserAvatars(user.id);
   const { supabase } = createServerSupabase(request);
+
+  // Get user achievements with proper type casting
+  const { data: achievementsData } = await supabase
+    .from('user_achievements')
+    .select(
+      `
+      id,
+      achievement:achievements!inner (
+        id,
+        name,
+        description,
+        points
+      )
+    `,
+    )
+    .eq('user_id', user.id);
 
   const { data: preferences } = await supabase
     .from('user_preferences')
@@ -57,71 +78,28 @@ export async function loader({ request }: LoaderFunctionArgs) {
     .eq('user_id', user.id)
     .single();
 
-  return json({
-    user,
-    availableAvatars,
-    achievements,
-    totalPoints,
+  // Transform the data to match our types
+  const achievements = (achievementsData || []).map((item: any) => ({
+    id: item.id,
+    achievement: {
+      id: item.achievement.id,
+      name: item.achievement.name,
+      description: item.achievement.description,
+      points: item.achievement.points,
+    },
+  }));
+
+  return typedjson<LoaderData>({
+    user: {
+      id: user.id,
+      username: user.username,
+      is_guest: user.is_guest,
+      avatar_url: user.avatar_url,
+    },
+    personalAvatars,
     preferences,
+    achievements,
   });
-}
-
-// Helper functions for avatar requirements
-function getAvatarPointsRequirement(avatarId: string): number | undefined {
-  const requirements: Record<string, number> = {
-    'theme-1': 200,
-    'collector-1': 500,
-    // Add more avatar point requirements
-  };
-  return requirements[avatarId];
-}
-
-function getAvatarAchievementRequirement(avatarId: string): string | undefined {
-  const requirements: Record<string, string> = {
-    'theme-1': 'Theme Master',
-    'collector-1': 'Avatar Collector',
-    // Add more avatar achievement requirements
-  };
-  return requirements[avatarId];
-}
-
-function isAvatarLocked(
-  avatar: any,
-  achievements: any[],
-  totalPoints: number,
-): boolean {
-  const pointsReq = getAvatarPointsRequirement(avatar.id);
-  const achievementReq = getAvatarAchievementRequirement(avatar.id);
-
-  if (pointsReq && totalPoints < pointsReq) return true;
-  if (
-    achievementReq &&
-    !achievements.some((a) => a.achievement?.name === achievementReq)
-  )
-    return true;
-
-  return false;
-}
-
-function getAvatarLockReason(
-  avatar: any,
-  achievements: any[],
-  totalPoints: number,
-): string | undefined {
-  const pointsReq = getAvatarPointsRequirement(avatar.id);
-  const achievementReq = getAvatarAchievementRequirement(avatar.id);
-
-  if (pointsReq && totalPoints < pointsReq) {
-    return `Requires ${pointsReq} points (you have ${totalPoints})`;
-  }
-  if (
-    achievementReq &&
-    !achievements.some((a) => a.achievement?.name === achievementReq)
-  ) {
-    return `Unlock "${achievementReq}" achievement first`;
-  }
-
-  return undefined;
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -132,92 +110,94 @@ export async function action({ request }: ActionFunctionArgs) {
   // Handle theme change achievement
   if (formData.get('action') === 'change-theme') {
     const theme = formData.get('theme') as string;
-    if (theme) {
-      await checkAndUnlockThemeAchievement(request, user.id, theme);
+    if (!theme) {
+      return typedjson({ error: 'Theme is required' }, { status: 400 });
     }
+
+    // Update user's theme preference
+    await supabase
+      .from('user_preferences')
+      .upsert({ user_id: user.id, theme }, { onConflict: 'user_id' });
+
+    // Check if user already has the theme achievements
+    const { data: existingAchievements } = await supabase
+      .from('user_achievements')
+      .select(
+        `
+        achievement:achievements!inner (
+          id,
+          name
+        )
+      `,
+      )
+      .eq('user_id', user.id)
+      .in('achievement.name', ['Theme Explorer', 'Theme Master']);
+
+    const hasThemeExplorer = (
+      existingAchievements as ThemeAchievement[] | null
+    )?.some((ua) => ua.achievement.name === 'Theme Explorer');
+    const hasThemeMaster = (
+      existingAchievements as ThemeAchievement[] | null
+    )?.some((ua) => ua.achievement.name === 'Theme Master');
+
+    // Only try to unlock achievements if they're not already unlocked
+    if (!hasThemeExplorer || !hasThemeMaster) {
+      // Get all user's theme changes
+      const { data: themeHistory } = await supabase
+        .from('theme_history')
+        .select('theme')
+        .eq('user_id', user.id);
+
+      const uniqueThemes = new Set(
+        (themeHistory as ThemeHistory[] | null)?.map((th) => th.theme) || [],
+      );
+      uniqueThemes.add(theme);
+
+      // Track this theme change
+      await supabase.from('theme_history').insert({
+        user_id: user.id,
+        theme,
+      });
+
+      // Try to unlock achievements based on conditions
+      if (!hasThemeExplorer) {
+        const { data: explorerAchievement } = await supabase
+          .from('achievements')
+          .select('id')
+          .eq('name', 'Theme Explorer')
+          .single();
+
+        if (explorerAchievement) {
+          await supabase.from('user_achievements').insert({
+            user_id: user.id,
+            achievement_id: explorerAchievement.id,
+          });
+        }
+      }
+
+      // Unlock Theme Master if they've used all themes
+      if (!hasThemeMaster && uniqueThemes.size >= 4) {
+        const { data: masterAchievement } = await supabase
+          .from('achievements')
+          .select('id')
+          .eq('name', 'Theme Master')
+          .single();
+
+        if (masterAchievement) {
+          await supabase.from('user_achievements').insert({
+            user_id: user.id,
+            achievement_id: masterAchievement.id,
+          });
+        }
+      }
+    }
+
+    return typedjson({ success: true, theme });
   }
 
   // Handle avatar change achievement
   if (formData.has('avatar') || formData.get('action') === 'select-preset') {
     await checkAndUnlockAvatarAchievement(request, user.id);
-  }
-
-  // Handle file upload
-  if (formData.has('avatar')) {
-    const files = formData.getAll('avatar');
-    const uploadedUrls = [];
-
-    for (const fileData of files) {
-      if (!(fileData instanceof Blob)) continue;
-      const file = fileData as Blob;
-
-      if (!file || file.size === 0) continue;
-      if (file.size > 5 * 1024 * 1024) {
-        throw new Response('File too large (max 5MB)', { status: 400 });
-      }
-
-      try {
-        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-        const publicUrl = await uploadAvatar(user.id, file, fileName);
-        uploadedUrls.push(publicUrl);
-      } catch (error) {
-        console.error('File upload error:', error);
-        continue;
-      }
-    }
-
-    if (uploadedUrls.length === 0) {
-      throw new Response('No files were uploaded successfully', {
-        status: 400,
-      });
-    }
-
-    // Update user avatar if they don't have one
-    if (!user.avatar_url) {
-      await supabase
-        .from('users')
-        .update({ avatar_url: uploadedUrls[0] })
-        .eq('id', user.id);
-    }
-
-    return { success: true, avatar_urls: uploadedUrls };
-  }
-
-  // Handle personal avatar deletion
-  if (formData.get('action') === 'delete-personal-avatar') {
-    const avatarName = formData.get('avatar_name') as string;
-    const filePath = `${user.id}/custom/${avatarName}`;
-
-    // Delete from storage
-    const { error: deleteError } = await supabase.storage
-      .from('avatars')
-      .remove([filePath]);
-
-    if (deleteError) {
-      console.error('Delete error:', deleteError);
-      throw new Response('Failed to delete avatar', { status: 500 });
-    }
-
-    // If this was the current avatar, remove it from user profile
-    const { data: currentUser } = await supabase
-      .from('users')
-      .select('avatar_url')
-      .eq('id', user.id)
-      .single();
-
-    if (currentUser?.avatar_url?.includes(avatarName)) {
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ avatar_url: null })
-        .eq('id', user.id);
-
-      if (updateError) {
-        console.error('Profile update error:', updateError);
-        throw new Response('Profile update failed', { status: 500 });
-      }
-    }
-
-    return { success: true };
   }
 
   // Handle preset avatar selection
@@ -242,11 +222,10 @@ export async function action({ request }: ActionFunctionArgs) {
       .eq('id', user.id);
 
     if (updateError) {
-      console.error('Profile update error:', updateError);
       throw new Response('Profile update failed', { status: 500 });
     }
 
-    return { success: true, avatar_url: avatarUrl };
+    return typedjson({ success: true, avatar_url: avatarUrl });
   }
 
   // Handle avatar removal
@@ -269,19 +248,17 @@ export async function action({ request }: ActionFunctionArgs) {
       .eq('id', user.id);
 
     if (updateError) {
-      console.error('Profile update error:', updateError);
       throw new Response('Profile update failed', { status: 500 });
     }
 
-    return { success: true };
+    return typedjson({ success: true });
   }
 
   throw new Response('Invalid action', { status: 400 });
 }
 
 export default function Settings() {
-  const { user, preferences, achievements, totalPoints, availableAvatars } =
-    useLoaderData<typeof loader>();
+  const { user, achievements } = useTypedLoaderData<typeof loader>();
 
   return (
     <PageLayout>
@@ -305,12 +282,7 @@ export default function Settings() {
 
           {!user.is_guest && (
             <>
-              <AvatarSettings
-                user={user}
-                availableAvatars={availableAvatars}
-                totalPoints={totalPoints}
-                achievements={achievements}
-              />
+              <AvatarSettings user={user} achievements={achievements} />
 
               <section>
                 <h2 className="mb-4 text-xl font-semibold text-light-text/90 retro:text-retro-text/90 multi:text-white/90 multi:drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] dark:text-dark-text/90">
@@ -320,81 +292,9 @@ export default function Settings() {
                   <p className="mb-4 text-sm text-light-text/80 retro:text-retro-text/80 multi:text-white/80 multi:drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] dark:text-dark-text/80">
                     Manage your account settings and preferences.
                   </p>
-                  {/* Account settings will go here */}
-                </div>
-              </section>
-
-              <section>
-                <h2 className="mb-4 text-xl font-semibold text-light-text/90 retro:text-retro-text/90 multi:text-white/90 multi:drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] dark:text-dark-text/90">
-                  Notifications
-                </h2>
-                <div className="rounded-lg border border-gray-300 bg-light-secondary p-6 retro:border-retro-text/30 retro:bg-retro-secondary multi:bg-multi-primary/60 dark:border-gray-600 dark:bg-dark-secondary">
-                  <p className="mb-4 text-sm text-light-text/80 retro:text-retro-text/80 multi:text-white/80 multi:drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] dark:text-dark-text/80">
-                    Configure how and when you receive notifications.
-                  </p>
-                  {/* Notification settings will go here */}
                 </div>
               </section>
             </>
-          )}
-
-          {user.is_guest && (
-            <section>
-              <h2 className="mb-4 text-xl font-semibold text-light-text/90 retro:text-retro-text/90 multi:text-white/90 multi:drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] dark:text-dark-text/90">
-                Unlock More Features
-              </h2>
-              <div className="rounded-lg border border-gray-300 bg-light-secondary p-6 retro:border-retro-text/30 retro:bg-retro-secondary multi:bg-multi-primary/60 dark:border-gray-600 dark:bg-dark-secondary">
-                <p className="mb-4 text-sm text-light-text/80 retro:text-retro-text/80 multi:text-white/80 multi:drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] dark:text-dark-text/80">
-                  Create an account to unlock additional features:
-                </p>
-
-                <ul className="mb-6 space-y-2">
-                  {[
-                    'Customize your profile avatar',
-                    'Track your progress and earn achievements',
-                    'Save your preferences across devices',
-                    'Join the developer community',
-                    'Access exclusive content and features',
-                    'Participate in coding challenges',
-                  ].map((feature, index) => (
-                    <li
-                      key={index}
-                      className="flex items-center gap-2 text-sm text-light-text/80 retro:text-retro-text/80 multi:text-white/80 multi:drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] dark:text-dark-text/80"
-                    >
-                      <svg
-                        className="h-5 w-5 text-light-accent retro:text-retro-accent multi:text-white dark:text-dark-accent"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12l2 2 4-4"
-                        />
-                      </svg>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="flex items-center gap-4">
-                  <a
-                    href="/signup"
-                    className="inline-flex items-center justify-center rounded-md bg-light-accent px-4 py-2 text-sm font-medium text-white hover:bg-light-accent/90 retro:bg-retro-accent retro:hover:bg-retro-accent/90 multi:bg-multi-gradient multi:from-multi-gradient-1 multi:via-multi-gradient-2 multi:to-multi-gradient-3 multi:text-white multi:shadow-lg multi:transition-all multi:hover:scale-105 multi:hover:animate-gradient multi:hover:shadow-xl dark:bg-dark-accent dark:hover:bg-dark-accent/90"
-                  >
-                    Create Account
-                  </a>
-                  <a
-                    href="/login"
-                    className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm text-light-text hover:text-light-accent retro:text-retro-text retro:hover:text-retro-accent multi:text-white multi:hover:text-white/80 dark:text-dark-text dark:hover:text-dark-accent"
-                  >
-                    Already have an account? Sign in
-                  </a>
-                </div>
-              </div>
-            </section>
           )}
         </div>
       </div>
