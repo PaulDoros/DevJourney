@@ -6,6 +6,7 @@ import { AvatarSettings } from '~/components/Settings/AvatarSettings';
 import {
   deleteOldAvatar,
   getUserAvatars,
+  uploadAvatar,
 } from '~/utils/supabase-storage.server';
 import { createServerSupabase } from '~/utils/supabase';
 import { checkAndUnlockAvatarAchievement } from '~/services/achievements.server';
@@ -106,6 +107,110 @@ export async function action({ request }: ActionFunctionArgs) {
   const user = await requireUser(request);
   const formData = await request.formData();
   const { supabase } = createServerSupabase(request);
+
+  // Handle file upload
+  if (formData.has('avatar')) {
+    const files = formData.getAll('avatar');
+    const uploadedUrls = [];
+
+    for (const fileData of files) {
+      if (!(fileData instanceof Blob)) continue;
+      const file = fileData as Blob;
+
+      if (!file || file.size === 0) continue;
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Response('File too large (max 5MB)', { status: 400 });
+      }
+
+      try {
+        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const publicUrl = await uploadAvatar(user.id, file, fileName);
+        uploadedUrls.push(publicUrl);
+      } catch (error) {
+        console.error('File upload error:', error);
+        continue;
+      }
+    }
+
+    if (uploadedUrls.length === 0) {
+      throw new Response('No files were uploaded successfully', {
+        status: 400,
+      });
+    }
+
+    // Update user avatar if they don't have one
+    if (!user.avatar_url) {
+      await supabase
+        .from('users')
+        .update({ avatar_url: uploadedUrls[0] })
+        .eq('id', user.id);
+    }
+
+    return { success: true, avatar_urls: uploadedUrls };
+  }
+
+  // Handle personal avatar deletion
+  if (formData.get('action') === 'delete-personal-avatar') {
+    const avatarName = formData.get('avatar_name') as string;
+    const filePath = `${user.id}/custom/${avatarName}`;
+
+    try {
+      // First, delete from storage
+      const { error: deleteError } = await supabase.storage
+        .from('avatars')
+        .remove([filePath]);
+
+      if (deleteError) {
+        console.error('Storage delete error:', deleteError);
+        throw new Response('Failed to delete avatar from storage', {
+          status: 500,
+        });
+      }
+
+      // Then, delete from personal_avatars table
+      const { error: deleteDbError } = await supabase
+        .from('personal_avatars')
+        .delete()
+        .match({
+          user_id: user.id,
+          name: avatarName,
+        });
+
+      if (deleteDbError) {
+        console.error('Database delete error:', deleteDbError);
+        // If the error is about the table not existing, we can ignore it
+        if (!deleteDbError.message.includes('does not exist')) {
+          throw new Response('Failed to delete avatar from database', {
+            status: 500,
+          });
+        }
+      }
+
+      // Finally, update user profile if needed
+      const { data: currentUser } = await supabase
+        .from('users')
+        .select('avatar_url')
+        .eq('id', user.id)
+        .single();
+
+      if (currentUser?.avatar_url?.includes(avatarName)) {
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ avatar_url: null })
+          .eq('id', user.id);
+
+        if (updateError) {
+          console.error('Profile update error:', updateError);
+          throw new Response('Profile update failed', { status: 500 });
+        }
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Avatar deletion error:', error);
+      throw new Response('Failed to delete avatar', { status: 500 });
+    }
+  }
 
   // Handle theme change achievement
   if (formData.get('action') === 'change-theme') {
