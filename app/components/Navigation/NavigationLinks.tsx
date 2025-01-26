@@ -1,4 +1,10 @@
-import { LayoutDashboard, UserCog, Settings, LogOut } from 'lucide-react';
+import {
+  LayoutDashboard,
+  UserCog,
+  Settings,
+  LogOut,
+  Trophy,
+} from 'lucide-react';
 
 export const navigationLinks = [
   {
@@ -14,6 +20,11 @@ export const navigationLinks = [
     icon: (
       <UserCog className="h-5 w-5 flex-shrink-0 text-neutral-700 dark:text-neutral-200" />
     ),
+  },
+  {
+    label: 'Achievements',
+    href: '/achievements',
+    icon: <Trophy className="h-5 w-5" />,
   },
   {
     label: 'Settings',

@@ -12,7 +12,13 @@ export default {
     v3_singleFetch: true,
   },
   dev: {
-    port: 8002,
-    rebuildPollIntervalMs: 3000,
+    // Use default port for app server
+    port: 3000,
+    // Reduce rebuild poll interval for better performance
+    rebuildPollIntervalMs: 1000,
+    // Set the HTTP scheme
+    httpScheme: 'http',
+    // Set the hostname
+    hostname: 'localhost',
   },
 };

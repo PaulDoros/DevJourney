@@ -67,7 +67,13 @@ export const links: LinksFunction = () => [
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUserFromSession(request);
-  return { user };
+  return json({
+    user,
+    ENV: {
+      NODE_ENV: process.env.NODE_ENV,
+      REMIX_DEV_SERVER_WS_PORT: process.env.REMIX_DEV_SERVER_WS_PORT,
+    },
+  });
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {

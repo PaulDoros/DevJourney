@@ -6,13 +6,45 @@ const LOCAL_PATHS = {
   ANIMATED: '/avatars/animated',
   STATIC: '/avatars/static',
 } as const;
-export const ANIMATED_AVATARS = [
+
+export type AvatarPreset = {
+  id: string;
+  url: string;
+  preview: string;
+  type: 'static' | 'lottie';
+  localPath?: string;
+  requirements?: {
+    points?: number;
+    achievement?: string;
+  };
+};
+
+export const ANIMATED_AVATARS: AvatarPreset[] = [
+  {
+    id: 'animated-1',
+    url: `${STORAGE_URL}/basic.json`,
+    preview: 'Basic Animated',
+    type: 'lottie',
+  },
+  {
+    id: 'animated-2',
+    url: `${STORAGE_URL}/heart.json`,
+    preview: 'Theme Master',
+    type: 'lottie',
+    requirements: {
+      achievement: 'Theme Master',
+      points: 200,
+    },
+  },
   {
     id: 'business-team',
     url: `${STORAGE_URL}/business-team.json`,
     localPath: `${LOCAL_PATHS.ANIMATED}/business-team.json`,
     preview: 'business-team',
     type: 'lottie',
+    requirements: {
+      points: 300,
+    },
   },
   {
     id: 'connection-error',
@@ -20,6 +52,9 @@ export const ANIMATED_AVATARS = [
     localPath: `${LOCAL_PATHS.ANIMATED}/connection-error.json`,
     preview: 'connection-error',
     type: 'lottie',
+    requirements: {
+      points: 400,
+    },
   },
   {
     id: 'polar-bear',
@@ -27,6 +62,9 @@ export const ANIMATED_AVATARS = [
     localPath: `${LOCAL_PATHS.ANIMATED}/polar-bear.json`,
     preview: 'polar-bear',
     type: 'lottie',
+    requirements: {
+      achievement: 'Early Bird',
+    },
   },
   {
     id: 'searching-food',
@@ -34,6 +72,9 @@ export const ANIMATED_AVATARS = [
     localPath: `${LOCAL_PATHS.ANIMATED}/searching-food.json`,
     preview: 'searching-food',
     type: 'lottie',
+    requirements: {
+      achievement: 'Active Explorer',
+    },
   },
   {
     id: 'winne-the-pooh',
@@ -41,16 +82,38 @@ export const ANIMATED_AVATARS = [
     localPath: `${LOCAL_PATHS.ANIMATED}/winne-the-pooh.json`,
     preview: 'winne-the-pooh',
     type: 'lottie',
+    requirements: {
+      achievement: 'Social Butterfly',
+    },
   },
 ] as const;
 
-export const STATIC_AVATARS = [
+export const STATIC_AVATARS: AvatarPreset[] = [
+  {
+    id: 'static-1',
+    url: `${STORAGE_URL}/stick.png`,
+    preview: 'Basic Static',
+    type: 'static',
+  },
+  {
+    id: 'static-2',
+    url: `${STORAGE_URL}/bat.png`,
+    preview: 'Collector',
+    type: 'static',
+    requirements: {
+      achievement: 'Avatar Collector',
+      points: 500,
+    },
+  },
   {
     id: 'boy-1',
     url: `${STORAGE_URL}/boy-static.jpg`,
     localPath: `${LOCAL_PATHS.STATIC}/boy-static.jpg`,
     preview: 'Boy avatar',
     type: 'static',
+    requirements: {
+      points: 150,
+    },
   },
   {
     id: 'man',
@@ -58,6 +121,9 @@ export const STATIC_AVATARS = [
     localPath: `${LOCAL_PATHS.STATIC}/man.jpg`,
     preview: 'Man avatar',
     type: 'static',
+    requirements: {
+      points: 250,
+    },
   },
 ] as const;
 

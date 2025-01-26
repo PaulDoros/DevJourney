@@ -80,11 +80,65 @@ export async function deleteOldAvatar(url: string) {
   try {
     // Extract the path after the bucket name
     const path = url.split('avatars/').pop();
-    if (path) {
-      await supabaseAdmin.storage.from('avatars').remove([path]);
+    if (!path) return;
+
+    console.log('Attempting to delete from storage, path:', path);
+
+    // Use supabaseAdmin for storage operations
+    const { data, error } = await supabaseAdmin.storage
+      .from('avatars')
+      .remove([path]);
+
+    if (error) {
+      console.error('Error deleting from storage:', error);
+      throw error;
     }
+
+    console.log('Delete result:', data);
+    return data;
   } catch (error) {
-    console.error('Error deleting old avatar:', error);
+    console.error('Error in deleteOldAvatar:', error);
+    throw error;
+  }
+}
+
+// Let's update deletePersonalAvatar to match the upload pattern
+export async function deletePersonalAvatar(avatarPath: string) {
+  try {
+    console.log('Starting deletion with path:', avatarPath);
+
+    // Extract userId and filename from the path
+    const [userId, _, filename] = avatarPath.split('/');
+    const filePath = `${userId}/custom/${filename}`;
+
+    console.log('Delete request:', {
+      bucket: 'avatars',
+      filePath,
+      originalPath: avatarPath,
+    });
+
+    // Use supabaseAdmin for storage operations
+    const { data, error } = await supabaseAdmin.storage
+      .from('avatars')
+      .remove([filePath]);
+
+    if (error) {
+      console.error('Delete error:', error);
+      throw error;
+    }
+
+    console.log('Delete success:', {
+      path: filePath,
+      result: data,
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Delete failed:', {
+      error,
+      path: avatarPath,
+    });
+    throw error;
   }
 }
 
@@ -112,11 +166,11 @@ export async function getUserAvatars(userId: string) {
       return [];
     }
 
-    // Filter out the .keep file
+    // Filter out the .keep file and map to correct format
     const avatars = data
       .filter((file) => file.name !== '.keep')
       .map((file) => ({
-        name: file.name,
+        name: `${userId}/custom/${file.name}`, // This is the full path needed for deletion
         url: supabaseAdmin.storage
           .from('avatars')
           .getPublicUrl(`${userId}/custom/${file.name}`).data.publicUrl,
@@ -124,6 +178,7 @@ export async function getUserAvatars(userId: string) {
         created_at: file.created_at,
       }));
 
+    console.log('Fetched avatars:', avatars);
     return avatars;
   } catch (error) {
     console.error('Error in getUserAvatars:', error);
