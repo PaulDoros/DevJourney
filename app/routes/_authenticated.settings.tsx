@@ -1,12 +1,13 @@
 import { ThemeSwitcher } from '~/components/ThemeSwitcher';
 import { PageLayout } from '~/components/layouts/PageLayout';
-import { LoaderFunctionArgs, ActionFunctionArgs } from '@remix-run/node';
+import { LoaderFunctionArgs, ActionFunctionArgs, json } from '@remix-run/node';
 import { requireUser } from '~/utils/session.server';
 import { AvatarSettings } from '~/components/Settings/AvatarSettings';
 import {
   deleteOldAvatar,
   getUserAvatars,
   uploadAvatar,
+  deletePersonalAvatar,
 } from '~/utils/supabase-storage.server';
 import { createServerSupabase } from '~/utils/supabase';
 import { checkAndUnlockAvatarAchievement } from '~/services/achievements.server';
@@ -108,6 +109,11 @@ export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const { supabase } = createServerSupabase(request);
 
+  console.log('Action received:', {
+    action: formData.get('action'),
+    formData: Object.fromEntries(formData),
+  });
+
   // Handle file upload
   if (formData.has('avatar')) {
     const files = formData.getAll('avatar');
@@ -151,63 +157,34 @@ export async function action({ request }: ActionFunctionArgs) {
 
   // Handle personal avatar deletion
   if (formData.get('action') === 'delete-personal-avatar') {
-    const avatarName = formData.get('avatar_name') as string;
-    const filePath = `${user.id}/custom/${avatarName}`;
+    const avatarPath = formData.get('avatar_name') as string;
+
+    if (!avatarPath) {
+      throw new Response('Avatar path is required', { status: 400 });
+    }
 
     try {
-      // First, delete from storage
-      const { error: deleteError } = await supabase.storage
+      // Try direct deletion
+      const { error } = await supabase.storage
         .from('avatars')
-        .remove([filePath]);
+        .remove([avatarPath]);
 
-      if (deleteError) {
-        console.error('Storage delete error:', deleteError);
-        throw new Response('Failed to delete avatar from storage', {
-          status: 500,
-        });
+      if (error) {
+        console.error('Delete failed:', error);
+        throw new Response('Failed to delete avatar', { status: 500 });
       }
 
-      // Then, delete from personal_avatars table
-      const { error: deleteDbError } = await supabase
-        .from('personal_avatars')
-        .delete()
-        .match({
-          user_id: user.id,
-          name: avatarName,
-        });
-
-      if (deleteDbError) {
-        console.error('Database delete error:', deleteDbError);
-        // If the error is about the table not existing, we can ignore it
-        if (!deleteDbError.message.includes('does not exist')) {
-          throw new Response('Failed to delete avatar from database', {
-            status: 500,
-          });
-        }
-      }
-
-      // Finally, update user profile if needed
-      const { data: currentUser } = await supabase
-        .from('users')
-        .select('avatar_url')
-        .eq('id', user.id)
-        .single();
-
-      if (currentUser?.avatar_url?.includes(avatarName)) {
-        const { error: updateError } = await supabase
+      // If this was the current avatar, clear it
+      if (user.avatar_url?.includes(avatarPath)) {
+        await supabase
           .from('users')
           .update({ avatar_url: null })
           .eq('id', user.id);
-
-        if (updateError) {
-          console.error('Profile update error:', updateError);
-          throw new Response('Profile update failed', { status: 500 });
-        }
       }
 
-      return { success: true };
+      return json({ success: true });
     } catch (error) {
-      console.error('Avatar deletion error:', error);
+      console.error('Error:', error);
       throw new Response('Failed to delete avatar', { status: 500 });
     }
   }
@@ -333,30 +310,26 @@ export async function action({ request }: ActionFunctionArgs) {
     return typedjson({ success: true, avatar_url: avatarUrl });
   }
 
-  // Handle avatar removal
+  // Handle avatar removal (for current avatar)
   if (formData.get('action') === 'remove-avatar') {
-    // Get current avatar URL before updating
-    const { data: currentUser } = await supabase
-      .from('users')
-      .select('avatar_url')
-      .eq('id', user.id)
-      .single();
+    try {
+      console.log('Removing current avatar');
 
-    // Delete old custom avatar if exists
-    if (currentUser?.avatar_url?.includes('/avatars/custom/')) {
-      await deleteOldAvatar(currentUser.avatar_url);
+      // Just update user profile to remove avatar
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ avatar_url: null })
+        .eq('id', user.id);
+
+      if (updateError) {
+        throw new Response('Failed to update profile', { status: 500 });
+      }
+
+      return typedjson({ success: true });
+    } catch (error) {
+      console.error('Error removing avatar:', error);
+      throw new Response('Failed to remove avatar', { status: 500 });
     }
-
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ avatar_url: null })
-      .eq('id', user.id);
-
-    if (updateError) {
-      throw new Response('Profile update failed', { status: 500 });
-    }
-
-    return typedjson({ success: true });
   }
 
   throw new Response('Invalid action', { status: 400 });

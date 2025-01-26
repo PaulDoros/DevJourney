@@ -8,7 +8,7 @@ import { UserAvatar } from '~/components/UserAvatar';
 import { cn } from '~/lib/utils';
 import { ANIMATED_AVATARS, STATIC_AVATARS } from '~/constants/avatars';
 import type { AvatarPreset } from '~/constants/avatars';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal } from '~/components/ui/Modal';
 
 import { AnimatedAvatar } from '~/components/AnimatedAvatar';
@@ -115,8 +115,9 @@ export function AvatarSettings({ user, achievements }: AvatarSettingsProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDeletePersonalModal, setShowDeletePersonalModal] = useState<{
     show: boolean;
-    avatarName?: string;
-  }>({ show: false });
+    avatarName: string;
+    isCurrentAvatar: boolean;
+  }>({ show: false, isCurrentAvatar: false, avatarName: '' });
   const { personalAvatars = [] } = useLoaderData<{
     personalAvatars: Array<{
       name: string;
@@ -133,6 +134,21 @@ export function AvatarSettings({ user, achievements }: AvatarSettingsProps) {
   );
 
   // Calculate available avatars with requirements
+
+  const isDeleting =
+    navigation.state === 'submitting' &&
+    navigation.formData?.get('action') === 'delete-personal-avatar';
+
+  // Close modal after successful submission
+  useEffect(() => {
+    if (!isDeleting && showDeletePersonalModal.show) {
+      setShowDeletePersonalModal({
+        show: false,
+        isCurrentAvatar: false,
+        avatarName: '',
+      });
+    }
+  }, [isDeleting]);
 
   return (
     <section>
@@ -298,43 +314,44 @@ export function AvatarSettings({ user, achievements }: AvatarSettingsProps) {
                         </svg>
                       </button>
                     </Form>
-                    <Form method="post">
-                      <input
-                        type="hidden"
-                        name="action"
-                        value="delete-personal-avatar"
-                      />
-                      <input
-                        type="hidden"
-                        name="avatar_name"
-                        value={avatar.name}
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setShowDeletePersonalModal({
-                            show: true,
-                            avatarName: avatar.name,
-                          })
-                        }
-                        className="rounded-full bg-red-500 p-2 text-white hover:bg-red-600"
-                        title="Delete picture"
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const isCurrentAvatar = user.avatar_url === avatar.url;
+                        console.log('Delete clicked for avatar:', {
+                          name: avatar.name,
+                          isCurrentAvatar,
+                          userAvatar: user.avatar_url,
+                          avatarUrl: avatar.url,
+                        });
+
+                        setShowDeletePersonalModal({
+                          show: true,
+                          avatarName: avatar.name,
+                          isCurrentAvatar,
+                        });
+                      }}
+                      className="rounded-full bg-red-500 p-2 text-white hover:bg-red-600"
+                      title={
+                        user.avatar_url === avatar.url
+                          ? 'Remove as avatar'
+                          : 'Delete picture'
+                      }
+                    >
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
                       >
-                        <svg
-                          className="h-5 w-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
-                    </Form>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -503,42 +520,85 @@ export function AvatarSettings({ user, achievements }: AvatarSettingsProps) {
         </div>
       </Modal>
 
-      {/* Add the new modal for personal avatar deletion */}
+      {/* Delete Personal Avatar Modal */}
       <Modal
         isOpen={showDeletePersonalModal.show}
-        onClose={() => setShowDeletePersonalModal({ show: false })}
-        title="Delete Uploaded Picture"
+        onClose={() =>
+          setShowDeletePersonalModal({
+            show: false,
+            avatarName: showDeletePersonalModal.avatarName,
+            isCurrentAvatar: showDeletePersonalModal.isCurrentAvatar,
+          })
+        }
+        title={
+          showDeletePersonalModal.isCurrentAvatar
+            ? 'Remove Current Avatar'
+            : 'Delete Uploaded Picture'
+        }
         maxWidth="400px"
       >
         <div className="space-y-4">
-          <p className="text-sm text-light-text/80 retro:text-retro-text/80 multi:text-white/80 dark:text-dark-text/80">
-            Are you sure you want to delete this picture from your collection?
-            This action cannot be undone.
+          <p className="text-sm text-light-text/80">
+            {showDeletePersonalModal.isCurrentAvatar
+              ? 'This will remove this picture as your current avatar. The picture will remain in your collection.'
+              : 'Are you sure you want to permanently delete this picture from your collection? This action cannot be undone.'}
           </p>
           <div className="flex justify-end gap-3">
             <button
-              onClick={() => setShowDeletePersonalModal({ show: false })}
+              onClick={() =>
+                setShowDeletePersonalModal({
+                  show: false,
+                  avatarName: showDeletePersonalModal.avatarName,
+                  isCurrentAvatar: showDeletePersonalModal.isCurrentAvatar,
+                })
+              }
               className="px-4 py-2 text-sm font-medium text-gray-500 transition-colors hover:text-gray-700"
             >
               Cancel
             </button>
-            <Form method="post">
+            <Form
+              method="post"
+              onSubmit={(e) => {
+                const form = e.currentTarget;
+                const avatarName = form.querySelector<HTMLInputElement>(
+                  'input[name="avatar_name"]',
+                )?.value;
+                console.log('Form submission:', {
+                  action: form.querySelector<HTMLInputElement>(
+                    'input[name="action"]',
+                  )?.value,
+                  avatarName,
+                });
+              }}
+            >
               <input
                 type="hidden"
                 name="action"
-                value="delete-personal-avatar"
+                value={
+                  showDeletePersonalModal.isCurrentAvatar
+                    ? 'remove-avatar'
+                    : 'delete-personal-avatar'
+                }
               />
               <input
                 type="hidden"
                 name="avatar_name"
                 value={showDeletePersonalModal.avatarName}
               />
+              {showDeletePersonalModal.isCurrentAvatar && (
+                <input
+                  type="hidden"
+                  name="current_avatar_url"
+                  value={user.avatar_url || ''}
+                />
+              )}
               <button
                 type="submit"
-                onClick={() => setShowDeletePersonalModal({ show: false })}
                 className="rounded-md bg-red-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-red-600"
               >
-                Delete Picture
+                {showDeletePersonalModal.isCurrentAvatar
+                  ? 'Remove Avatar'
+                  : 'Delete Picture'}
               </button>
             </Form>
           </div>
