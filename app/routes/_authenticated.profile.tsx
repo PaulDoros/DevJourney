@@ -7,19 +7,38 @@ import { UserAvatar } from '~/components/UserAvatar';
 import { getUserAchievements } from '~/services/achievements.server';
 import { cn } from '~/lib/utils';
 import { AchievementsProgress } from '~/components/Achievements/AchievementsProgress';
+import { createServerSupabase } from '~/utils/supabase';
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUser(request);
-  const achievements = await getUserAchievements(request, user.id);
+  const { supabase } = createServerSupabase(request);
+
+  const [userAchievementsResponse, allAchievementsResponse] = await Promise.all(
+    [
+      supabase
+        .from('user_achievements')
+        .select('*, achievement:achievements(*)')
+        .eq('user_id', user.id),
+      supabase
+        .from('achievements')
+        .select('*')
+        .order('points', { ascending: false }),
+    ],
+  );
+
+  const userAchievements = userAchievementsResponse.data || [];
+  const allAchievements = allAchievementsResponse.data || [];
+
+  const totalPoints = userAchievements.reduce(
+    (total, ua) => total + (ua.achievement?.points || 0),
+    0,
+  );
 
   return json({
     user,
-    achievements,
-    // Calculate total points from achievements
-    totalPoints: achievements.reduce(
-      (total, ua) => total + (ua.achievement?.points || 0),
-      0,
-    ),
+    userAchievements,
+    allAchievements,
+    totalPoints,
   });
 }
 
@@ -58,7 +77,8 @@ function AchievementCard({
 }
 
 export default function Profile() {
-  const { user, achievements, totalPoints } = useLoaderData<typeof loader>();
+  const { user, userAchievements, allAchievements, totalPoints } =
+    useLoaderData<typeof loader>();
 
   return (
     <PageLayout>
@@ -87,7 +107,10 @@ export default function Profile() {
             Achievement Progress
           </h2>
           <div className="rounded-lg border border-gray-300 bg-light-secondary p-4 retro:border-retro-text/30 retro:bg-retro-secondary multi:bg-multi-primary/60 dark:border-gray-600 dark:bg-dark-secondary sm:p-6">
-            <AchievementsProgress achievements={achievements} />
+            <AchievementsProgress
+              userAchievements={userAchievements}
+              allAchievements={allAchievements}
+            />
           </div>
         </section>
 
@@ -111,7 +134,7 @@ export default function Profile() {
           </div>
           <div className="rounded-lg border border-gray-300 bg-light-secondary p-4 retro:border-retro-text/30 retro:bg-retro-secondary multi:bg-multi-primary/60 dark:border-gray-600 dark:bg-dark-secondary sm:p-6">
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-4">
-              {achievements.map((ua) => (
+              {userAchievements.map((ua) => (
                 <AchievementCard
                   key={ua.achievement?.id}
                   achievement={{
