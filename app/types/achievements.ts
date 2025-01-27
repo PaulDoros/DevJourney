@@ -5,6 +5,7 @@ export interface Achievement {
   points: number;
   component_id: string | null;
   icon_url: string | null;
+  preset_avatar_id: string | null;
   created_at: string;
 }
 
@@ -13,7 +14,7 @@ export interface UserAchievement {
   user_id: string;
   achievement_id: string;
   unlocked_at: string;
-  achievement: Achievement;
+  achievement?: Achievement;
 }
 
 export interface Avatar {
@@ -23,15 +24,4 @@ export interface Avatar {
   url: string;
   achievementId: string | null;
   createdAt: string;
-}
-
-export interface AchievementResponse {
-  user: {
-    id: string;
-    username: string;
-    avatar_url: string | null;
-    [key: string]: any;
-  };
-  achievements: UserAchievement[];
-  totalPoints: number;
 }

@@ -1,0 +1,27 @@
+.Toastify__toast {
+  @apply bg-light-accent text-light-text dark:bg-dark-accent dark:text-dark-text;
+}
+
+.Toastify__toast--success {
+  @apply bg-green-500;
+}
+
+.Toastify__toast--error {
+  @apply bg-red-500;
+}
+
+.Toastify__toast--warning {
+  @apply bg-yellow-500;
+}
+
+.Toastify__toast--info {
+  @apply bg-blue-500;
+}
+
+.Toastify__toast-body {
+  @apply font-sans;
+}
+
+.achievement-toast {
+  @apply bg-gradient-to-r from-multi-gradient-1 via-multi-gradient-2 to-multi-gradient-3;
+}
