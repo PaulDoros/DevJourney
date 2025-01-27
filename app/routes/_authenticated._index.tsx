@@ -9,22 +9,11 @@ import { ComponentShowcase } from '~/components/Learning/ComponentShowcase';
 // import { getUserProgress } from '~/services/progress.server';
 import { requireUser } from '~/utils/session.server';
 
-import { AchievementsProgress } from '~/components/Achievements/AchievementsProgress';
 import { Link } from '@remix-run/react';
 import { createServerSupabase } from '~/utils/supabase';
-import type {
-  AchievementResponse,
-  UserAchievement,
-  Achievement,
-} from '~/types/achievements';
-import { typedjson, useTypedLoaderData } from 'remix-typedjson';
-import {
-  Key,
-  ReactElement,
-  JSXElementConstructor,
-  ReactNode,
-  ReactPortal,
-} from 'react';
+import type { UserAchievement } from '~/types/achievements';
+
+import { AchievementsProgress } from '~/components/Achievements/AchievementsProgress';
 
 // Define the type for Supabase response
 interface SupabaseAchievement {
@@ -47,61 +36,38 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUser(request);
   const { supabase } = createServerSupabase(request);
 
-  // Get user achievements with component_id
-  const { data: achievementsData } = await supabase
-    .from('user_achievements')
-    .select(
-      `
-      id,
-      user_id,
-      achievement_id,
-      unlocked_at,
-      achievement:achievements!inner (
-        id,
-        name,
-        description,
-        points,
-        component_id,
-        icon_url,
-        created_at
-      )
-    `,
-    )
-    .eq('user_id', user.id)
-    .order('unlocked_at', { ascending: false });
+  const [userAchievementsResponse, allAchievementsResponse] = await Promise.all(
+    [
+      supabase
+        .from('user_achievements')
+        .select('*, achievement:achievements(*)')
+        .eq('user_id', user.id),
+      supabase
+        .from('achievements')
+        .select('*')
+        .order('points', { ascending: false }),
+    ],
+  );
 
-  // Type assertion for the Supabase response
-  const achievements = (achievementsData as SupabaseAchievement[] | null) || [];
+  const userAchievements = userAchievementsResponse.data || [];
+  const allAchievements = allAchievementsResponse.data || [];
 
-  const response: AchievementResponse = {
+  const totalPoints = userAchievements.reduce(
+    (total, ua) => total + (ua.achievement?.points || 0),
+    0,
+  );
+
+  return json({
     user,
-    achievements: achievements.map((achievement) => ({
-      id: achievement.id,
-      user_id: achievement.user_id,
-      achievement_id: achievement.achievement_id,
-      unlocked_at: achievement.unlocked_at,
-      achievement: {
-        id: achievement.achievement.id,
-        name: achievement.achievement.name,
-        description: achievement.achievement.description,
-        points: achievement.achievement.points,
-        component_id: achievement.achievement.component_id,
-        icon_url: achievement.achievement.icon_url,
-        created_at: achievement.achievement.created_at,
-      },
-    })),
-    totalPoints: achievements.reduce(
-      (total, ua) => total + (ua.achievement?.points || 0),
-      0,
-    ),
-  };
-
-  return typedjson(response);
+    userAchievements,
+    allAchievements,
+    totalPoints,
+  });
 }
 
 export default function Index() {
-  const { user, achievements, totalPoints } =
-    useTypedLoaderData<typeof loader>();
+  const { user, userAchievements, allAchievements, totalPoints } =
+    useLoaderData<typeof loader>();
 
   return (
     <PageLayout>
@@ -127,7 +93,10 @@ export default function Index() {
             Your Progress
           </h2>
           <div className="rounded-lg border border-gray-300 bg-light-secondary p-6 retro:border-retro-text/30 retro:bg-retro-secondary multi:bg-multi-primary/60 dark:border-gray-600 dark:bg-dark-secondary">
-            <AchievementsProgress achievements={achievements} />
+            <AchievementsProgress
+              userAchievements={userAchievements}
+              allAchievements={allAchievements}
+            />
           </div>
         </section>
 
@@ -153,7 +122,7 @@ export default function Index() {
             </Link>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {achievements.slice(0, 3).map((ua: UserAchievement) => (
+            {userAchievements.slice(0, 3).map((ua: UserAchievement) => (
               <div
                 key={ua.id}
                 className="rounded-lg border border-gray-300 bg-light-secondary p-4 retro:border-retro-text/30 retro:bg-retro-secondary multi:bg-multi-primary/60 dark:border-gray-600 dark:bg-dark-secondary"
@@ -161,14 +130,14 @@ export default function Index() {
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="font-medium text-light-text retro:text-retro-text multi:text-white dark:text-dark-text">
-                      {ua.achievement.name}
+                      {ua.achievement?.name}
                     </h3>
                     <p className="mt-1 text-sm text-light-text/60 retro:text-retro-text/60 multi:text-white/60 dark:text-dark-text/60">
-                      {ua.achievement.description}
+                      {ua.achievement?.description}
                     </p>
                   </div>
                   <div className="rounded-full bg-light-accent/10 px-2 py-1 text-xs font-medium text-light-accent retro:bg-retro-accent/10 retro:text-retro-accent multi:bg-white/10 multi:text-white dark:bg-dark-accent/10 dark:text-dark-accent">
-                    {ua.achievement.points} pts
+                    {ua.achievement?.points} pts
                   </div>
                 </div>
               </div>
