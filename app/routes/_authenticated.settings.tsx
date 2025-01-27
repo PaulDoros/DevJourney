@@ -12,46 +12,21 @@ import {
 import { createServerSupabase } from '~/utils/supabase';
 import { checkAndUnlockAvatarAchievement } from '~/services/achievements.server';
 import { typedjson, useTypedLoaderData } from 'remix-typedjson';
+import type {
+  Achievement,
+  UploadSlot,
+  SettingsLoaderData,
+  ThemeAchievement,
+  ThemeHistory,
+} from '~/types';
 
-// Define types for theme-related data
-interface ThemeAchievement {
-  achievement: {
-    id: string;
-    name: string;
-  };
-}
-
-interface ThemeHistory {
-  theme: string;
-  created_at: string;
-}
-
-interface LoaderData {
-  user: {
-    id: string;
-    username: string;
-    is_guest: boolean;
-    avatar_url: string | null;
-  };
-  preferences: {
-    theme: string;
-  } | null;
-  achievements: Array<{
-    id: string;
-    achievement: {
-      id: string;
-      name: string;
-      description: string;
-      points: number;
-    };
-  }>;
-  personalAvatars: Array<{
-    name: string;
-    url: string;
-    size: number;
-    created_at: string;
-  }>;
-}
+const UPLOAD_SLOTS: UploadSlot[] = [
+  { slot: 1, requiredPoints: 200 },
+  { slot: 2, requiredPoints: 500 },
+  { slot: 3, requiredPoints: 1000 },
+  { slot: 4, requiredPoints: 2000 },
+  { slot: 5, requiredPoints: 5000 },
+];
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUser(request);
@@ -68,7 +43,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
         id,
         name,
         description,
-        points
+        points,
+        icon_url,
+        preset_avatar_id,
+        created_at,
+        component_id
       )
     `,
     )
@@ -80,18 +59,19 @@ export async function loader({ request }: LoaderFunctionArgs) {
     .eq('user_id', user.id)
     .single();
 
-  // Transform the data to match our types
+  // Transform the data to match our Achievement type
   const achievements = (achievementsData || []).map((item: any) => ({
-    id: item.id,
-    achievement: {
-      id: item.achievement.id,
-      name: item.achievement.name,
-      description: item.achievement.description,
-      points: item.achievement.points,
-    },
+    id: item.achievement.id,
+    name: item.achievement.name,
+    description: item.achievement.description,
+    points: item.achievement.points,
+    icon_url: item.achievement.icon_url,
+    preset_avatar_id: item.achievement.preset_avatar_id,
+    created_at: item.achievement.created_at,
+    component_id: item.achievement.component_id,
   }));
 
-  return typedjson<LoaderData>({
+  return typedjson<SettingsLoaderData>({
     user: {
       id: user.id,
       username: user.username,
@@ -121,12 +101,25 @@ export async function action({ request }: ActionFunctionArgs) {
     // Get current number of personal avatars
     const personalAvatars = await getUserAvatars(user.id);
 
-    // Check if adding new files would exceed the limit
-    if (personalAvatars.length + files.length > 5) {
-      throw new Response(
-        'You can only have up to 5 pictures. Please delete some before uploading more.',
-        { status: 400 },
-      );
+    // Get user's achievements
+    const { data: achievementsData } = await supabase
+      .from('achievements')
+      .select('*')
+      .eq('user_id', user.id);
+
+    const totalPoints = (achievementsData || []).reduce(
+      (sum, achievement: Achievement) => sum + achievement.points,
+      0,
+    );
+
+    // Calculate available slots based on points
+    const availableSlots = UPLOAD_SLOTS.filter(
+      (slot) => totalPoints >= slot.requiredPoints,
+    ).length;
+
+    // Validate upload count against available slots
+    if (personalAvatars.length >= availableSlots) {
+      return json({ error: 'No available upload slots' }, { status: 400 });
     }
 
     const uploadedUrls = [];
