@@ -12,7 +12,7 @@ import {
 } from '@remix-run/react';
 import { json } from '@remix-run/node';
 import type { LinksFunction, LoaderFunctionArgs } from '@remix-run/node';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 
 import './tailwind.css';
 import stylesheet from '~/styles/app.css?url';
@@ -23,8 +23,11 @@ import { getErrorMessage } from '~/utils/errorMessages';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
 import { DefaultErrorFallback } from '~/components/DefaultErrorFallback';
 
-import { ToastProvider } from '~/context/ToastContext';
+import { ToastProvider, useToast } from '~/context/ToastContext';
 import { getUserFromSession } from '~/utils/auth.server';
+import { supabase } from './utils/supabase';
+import { UserAchievement } from './types/achievements';
+import { useAchievementListener } from './hooks/useAchivementToast';
 
 // Lazy load components that use Framer Motion
 const PageTransition = lazy(() =>
@@ -67,8 +70,18 @@ export const links: LinksFunction = () => [
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUserFromSession(request);
+  const [userAchievementsResponse] = await Promise.all([
+    supabase
+      .from('user_achievements')
+      .select('*, achievement:achievements(*)')
+      .eq('user_id', user.id),
+  ]);
+
+  const userAchievements = userAchievementsResponse.data || [];
+
   return json({
     user,
+    userAchievements,
     ENV: {
       NODE_ENV: process.env.NODE_ENV,
       REMIX_DEV_SERVER_WS_PORT: process.env.REMIX_DEV_SERVER_WS_PORT,
@@ -104,7 +117,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const location = useLocation();
+  const { userAchievements } = useLoaderData<typeof loader>();
 
+  useAchievementListener(userAchievements);
   return (
     <Suspense fallback={<DefaultErrorFallback />}>
       <AnimatePresence mode="wait" initial={false}>
