@@ -150,6 +150,9 @@ export function AvatarSettings({ user, achievements }: AvatarSettingsProps) {
     }
   }, [isDeleting]);
 
+  const avatarCount = personalAvatars.length;
+  const isAtLimit = avatarCount >= 5;
+
   return (
     <section>
       <div className="mb-4 flex items-center justify-between">
@@ -198,7 +201,12 @@ export function AvatarSettings({ user, achievements }: AvatarSettingsProps) {
         {/* Personal Avatars Grid */}
 
         <div className="mt-8 border-t border-gray-200 pt-8 dark:border-gray-700">
-          <h3 className="mb-4 text-lg font-medium">Your Uploaded Pictures</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="mb-4 text-lg font-medium">Your Uploaded Pictures</h3>
+            <span className="text-sm text-light-text/70 dark:text-dark-text/70">
+              {avatarCount}/5 pictures used
+            </span>
+          </div>
           <p className="pb-2 text-sm text-light-text/80 retro:text-retro-text/80 multi:text-white/80 dark:text-dark-text/80">
             Upload new pictures to your collection or choose from presets.
             Supported formats: JPG, PNG, GIF (max 5MB)
@@ -222,6 +230,15 @@ export function AvatarSettings({ user, achievements }: AvatarSettingsProps) {
                     e.target.files &&
                     e.target.files.length > 0
                   ) {
+                    // Check total number of files
+                    if (avatarCount + e.target.files.length > 5) {
+                      alert(
+                        `You can only have up to 5 pictures. You currently have ${avatarCount}.`,
+                      );
+                      e.target.value = ''; // Clear the file input
+                      return;
+                    }
+
                     // Check file sizes before submitting
                     const hasLargeFile = Array.from(e.target.files).some(
                       (file) => file.size > 5 * 1024 * 1024,
@@ -231,13 +248,14 @@ export function AvatarSettings({ user, achievements }: AvatarSettingsProps) {
                       alert(
                         'One or more files are too large. Maximum size is 5MB.',
                       );
+                      e.target.value = ''; // Clear the file input
                       return;
                     }
 
                     submit(e.target.form);
                   }
                 }}
-                disabled={isUploading}
+                disabled={isUploading || isAtLimit}
               />
               <label
                 htmlFor="avatar-upload"
@@ -247,7 +265,7 @@ export function AvatarSettings({ user, achievements }: AvatarSettingsProps) {
                   'retro:hover:border-retro-accent retro:hover:bg-retro-accent/5',
                   'multi:hover:border-white/50 multi:hover:bg-white/5',
                   'dark:border-gray-600 dark:bg-gray-800/30 dark:hover:border-dark-accent dark:hover:bg-dark-accent/5',
-                  isUploading && 'cursor-not-allowed opacity-50',
+                  (isUploading || isAtLimit) && 'cursor-not-allowed opacity-50',
                 )}
               >
                 <div className="flex flex-col items-center gap-2 p-2 text-center">
@@ -265,9 +283,15 @@ export function AvatarSettings({ user, achievements }: AvatarSettingsProps) {
                     />
                   </svg>
                   <span className="text-xs font-medium text-gray-500 group-hover:text-light-accent retro:group-hover:text-retro-accent multi:group-hover:text-white/90 dark:text-gray-400 dark:group-hover:text-dark-accent">
-                    {isUploading ? 'Uploading...' : 'Upload'}
+                    {isUploading
+                      ? 'Uploading...'
+                      : isAtLimit
+                        ? 'Limit Reached'
+                        : 'Upload'}
                   </span>
-                  <span className="text-[10px] text-gray-400">Max 5MB</span>
+                  <span className="text-[10px] text-gray-400">
+                    {isAtLimit ? 'Delete some to upload more' : 'Max 5MB'}
+                  </span>
                 </div>
               </label>
             </Form>

@@ -117,6 +117,18 @@ export async function action({ request }: ActionFunctionArgs) {
   // Handle file upload
   if (formData.has('avatar')) {
     const files = formData.getAll('avatar');
+
+    // Get current number of personal avatars
+    const personalAvatars = await getUserAvatars(user.id);
+
+    // Check if adding new files would exceed the limit
+    if (personalAvatars.length + files.length > 5) {
+      throw new Response(
+        'You can only have up to 5 pictures. Please delete some before uploading more.',
+        { status: 400 },
+      );
+    }
+
     const uploadedUrls = [];
 
     for (const fileData of files) {
