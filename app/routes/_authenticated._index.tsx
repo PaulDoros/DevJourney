@@ -14,6 +14,7 @@ import { createServerSupabase } from '~/utils/supabase';
 import type { UserAchievement } from '~/types/achievements';
 
 import { AchievementsProgress } from '~/components/Achievements/AchievementsProgress';
+import { AchievementTester } from '~/components/Achievements/AchievementTester';
 
 // Define the type for Supabase response
 interface SupabaseAchievement {
@@ -86,7 +87,7 @@ export default function Index() {
             </span>
           </div>
         </div>
-
+        <AchievementTester />
         {/* Achievements Progress */}
         <section className="mb-8">
           <h2 className="mb-4 text-xl font-semibold text-light-text/90 retro:text-retro-text/90 multi:text-white/90 multi:drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] dark:text-dark-text/90">

@@ -2,13 +2,27 @@ import { useFetcher } from '@remix-run/react';
 import { useToast } from '~/context/ToastContext';
 import { useEffect } from 'react';
 
+// Define types for the achievement response
+interface Achievement {
+  name: string;
+  description: string;
+  points: number;
+}
+
+interface AchievementResponse {
+  success: boolean;
+  achievement?: Achievement;
+  removed?: boolean;
+  error?: string;
+}
+
 export function AchievementTester() {
-  const fetcher = useFetcher();
+  const fetcher = useFetcher<AchievementResponse>();
   const { showAchievement, showSuccess, showError } = useToast();
 
   const handleTestToast = () => {
     // First show a regular toast
-    showSuccess('Testing the notification system...');
+    showAchievement('Testing the notification system...', 'asdh gfgf  fghf');
 
     // Try to unlock the achievement
     fetcher.submit(
@@ -28,17 +42,19 @@ export function AchievementTester() {
 
   // Handle the response from the achievement tracking
   useEffect(() => {
-    if (fetcher.data?.success) {
-      if (fetcher.data.removed) {
-        showSuccess('Achievement removed successfully!');
-      } else if (fetcher.data.achievement) {
-        showAchievement(
-          fetcher.data.achievement.name,
-          `${fetcher.data.achievement.description} (+${fetcher.data.achievement.points} points)`,
-        );
+    if (fetcher.data) {
+      if (fetcher.data.success) {
+        if (fetcher.data.removed) {
+          showAchievement('Achievement removed successfully!', 'asd');
+        } else if (fetcher.data.achievement) {
+          showAchievement(
+            fetcher.data.achievement.name,
+            `${fetcher.data.achievement.description} (+${fetcher.data.achievement.points} points)`,
+          );
+        }
+      } else if (fetcher.data.error) {
+        showError(fetcher.data.error);
       }
-    } else if (fetcher.data?.error) {
-      showError(fetcher.data.error);
     }
   }, [fetcher.data, showAchievement, showSuccess, showError]);
 
