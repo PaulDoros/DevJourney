@@ -1,5 +1,5 @@
 import { Sidebar, SidebarBody, SidebarLink } from '~/components/ui/Sidebar';
-import { navigationLinks } from '~/components/Navigation/NavigationLinks';
+import { NavigationLinksList } from '~/components/Navigation/NavigationLinks';
 import { Logo, LogoIcon } from '~/components/Logo';
 import { UserAvatar } from '~/components/UserAvatar';
 import { useState, useEffect } from 'react';
@@ -73,10 +73,8 @@ export default function AuthenticatedLayout() {
         <SidebarBody className="justify-between gap-10">
           <div className="flex flex-1 flex-col">
             {open ? <Logo /> : <LogoIcon />}
-            <div className="mt-8 flex flex-col gap-2">
-              {navigationLinks.map((link) => (
-                <SidebarLink key={link.href} link={link} />
-              ))}
+            <div className="mt-8">
+              <NavigationLinksList />
             </div>
           </div>
           <div>
