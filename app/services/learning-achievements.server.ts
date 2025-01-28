@@ -49,50 +49,67 @@ export async function checkAndUnlockLearningAchievement(
     completedSections.includes(step),
   ).length;
 
+  // Fetch achievement IDs first
+  const { data: gettingStartedAchievements } = await supabase
+    .from('achievements')
+    .select('id, name')
+    .in('name', [
+      'Getting Started Beginner',
+      'Getting Started Intermediate',
+      'Getting Started Master',
+      'Learning Starter',
+      'Learning Master',
+    ]);
+
+  if (!gettingStartedAchievements) return;
+
+  const achievementMap = new Map(
+    gettingStartedAchievements.map((a) => [a.name, a.id]),
+  );
+
   // Unlock achievements based on progress
   if (gettingStartedProgress === 1) {
-    await unlockAchievement(request, userId, 'getting-started-beginner');
+    const achievementId = achievementMap.get('Getting Started Beginner');
+    if (achievementId) {
+      await unlockAchievement(request, userId, achievementId);
+    }
   }
 
   if (gettingStartedProgress === 3) {
-    await unlockAchievement(request, userId, 'getting-started-intermediate');
+    const achievementId = achievementMap.get('Getting Started Intermediate');
+    if (achievementId) {
+      await unlockAchievement(request, userId, achievementId);
+    }
   }
 
   if (gettingStartedProgress === GETTING_STARTED_STEPS.length) {
-    await unlockAchievement(request, userId, 'getting-started-master');
+    const achievementId = achievementMap.get('Getting Started Master');
+    if (achievementId) {
+      await unlockAchievement(request, userId, achievementId);
+    }
   }
 
-  // Check for achievements based on progress
+  // Check for general learning achievements
   const achievements = [];
 
   // Check if this is their first learning section visit
   if (completedSections.length === 1) {
-    const { data: learningStarterAchievement } = await supabase
-      .from('achievements')
-      .select('id')
-      .eq('name', 'Learning Starter')
-      .single();
-
-    if (learningStarterAchievement) {
+    const learningStarterId = achievementMap.get('Learning Starter');
+    if (learningStarterId) {
       achievements.push({
         user_id: userId,
-        achievement_id: learningStarterAchievement.id,
+        achievement_id: learningStarterId,
       });
     }
   }
 
   // Check if they've visited all main sections
   if (completedSections.length >= 5) {
-    const { data: learningMasterAchievement } = await supabase
-      .from('achievements')
-      .select('id')
-      .eq('name', 'Learning Master')
-      .single();
-
-    if (learningMasterAchievement) {
+    const learningMasterId = achievementMap.get('Learning Master');
+    if (learningMasterId) {
       achievements.push({
         user_id: userId,
-        achievement_id: learningMasterAchievement.id,
+        achievement_id: learningMasterId,
       });
     }
   }

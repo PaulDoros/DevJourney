@@ -1,75 +1,102 @@
 import { json, type ActionFunctionArgs } from '@remix-run/node';
 import { requireUser } from '~/utils/session.server';
 import { createServerSupabase } from '~/utils/supabase';
-import { typedjson } from 'remix-typedjson';
-import type { Achievement } from '~/types/achievements';
+import { unlockAchievement } from '~/services/achievements.server';
 
 export async function action({ request }: ActionFunctionArgs) {
   const user = await requireUser(request);
   const formData = await request.formData();
-  const componentId = formData.get('componentId') as string;
-  const { supabase } = createServerSupabase(request);
+
+  const achievementType = formData.get('achievementType') as string;
+  const stepId = formData.get('stepId') as string;
+  const achievementName = formData.get('achievementName') as string;
+  const progress = Number(formData.get('progress'));
+  const totalSteps = Number(formData.get('totalSteps'));
+
+  if (!achievementType) {
+    return json({ error: 'Achievement type is required' }, { status: 400 });
+  }
 
   try {
-    // Get the achievement by component_id
-    const { data: achievement, error: achievementError } = await supabase
-      .from('achievements')
-      .select('id, name')
-      .eq('component_id', componentId)
-      .single();
+    const { supabase } = createServerSupabase(request);
 
-    if (achievementError || !achievement) {
-      console.error(`Achievement ${componentId} not found`);
-      return typedjson({ error: 'Achievement not found' }, { status: 404 });
-    }
+    if (achievementType === 'getting-started') {
+      // Get the achievement ID for this step
+      const { data: achievement } = await supabase
+        .from('achievements')
+        .select('id')
+        .eq('name', achievementName)
+        .single();
 
-    // Check if user already has this achievement recently
-    const { data: existingAchievement } = await supabase
-      .from('user_achievements')
-      .select('created_at')
-      .eq('user_id', user.id)
-      .eq('achievement_id', achievement.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+      if (achievement) {
+        // Unlock the individual step achievement
+        await unlockAchievement(request, user.id, achievement.id);
+      }
 
-    if (existingAchievement) {
-      const timeSinceUnlock =
-        Date.now() - new Date(existingAchievement.created_at).getTime();
-      if (timeSinceUnlock < 5000) {
-        // 5 seconds cooldown
-        return typedjson({
-          success: true,
-          message: 'Achievement already unlocked recently',
-        });
+      // Check for progress achievements
+      if (progress === Math.floor(totalSteps / 2)) {
+        const { data: progressAchievement } = await supabase
+          .from('achievements')
+          .select('id')
+          .eq('name', 'Setup Progress')
+          .single();
+
+        if (progressAchievement) {
+          await unlockAchievement(request, user.id, progressAchievement.id);
+        }
+      }
+
+      if (progress === totalSteps) {
+        const { data: masterAchievement } = await supabase
+          .from('achievements')
+          .select('id')
+          .eq('name', 'Setup Master')
+          .single();
+
+        if (masterAchievement) {
+          await unlockAchievement(request, user.id, masterAchievement.id);
+        }
+      }
+    } else if (achievementType === 'page-visit') {
+      // Existing page visit achievement logic
+      const { data: starterAchievement } = await supabase
+        .from('achievements')
+        .select('id')
+        .eq('name', 'Learning Starter')
+        .single();
+
+      if (starterAchievement) {
+        await unlockAchievement(request, user.id, starterAchievement.id);
+      }
+
+      // Check for master achievement after 5 sections
+      const visitedSections = await getVisitedSections(request, user.id);
+      if (visitedSections.length >= 5) {
+        const { data: masterAchievement } = await supabase
+          .from('achievements')
+          .select('id')
+          .eq('name', 'Learning Master')
+          .single();
+
+        if (masterAchievement) {
+          await unlockAchievement(request, user.id, masterAchievement.id);
+        }
       }
     }
 
-    // Insert new achievement
-    const { error: insertError } = await supabase
-      .from('user_achievements')
-      .insert({
-        user_id: user.id,
-        achievement_id: achievement.id,
-      });
-
-    if (insertError) {
-      if (insertError.code === '23505') {
-        // Unique violation
-        return typedjson({
-          success: true,
-          message: 'Achievement already unlocked',
-        });
-      }
-      throw insertError;
-    }
-
-    return typedjson({
-      success: true,
-      message: 'Achievement unlocked!',
-    });
+    return json({ success: true });
   } catch (error) {
-    console.error('Achievement tracking error:', error);
-    return typedjson({ error: 'Failed to track achievement' }, { status: 500 });
+    console.error('Error unlocking achievement:', error);
+    return json({ error: 'Failed to unlock achievement' }, { status: 500 });
   }
+}
+
+async function getVisitedSections(request: Request, userId: string) {
+  const { supabase } = createServerSupabase(request);
+  const { data } = await supabase
+    .from('learning_progress')
+    .select('section_id')
+    .eq('user_id', userId);
+
+  return data || [];
 }

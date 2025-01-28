@@ -11,8 +11,69 @@ import {
   interactiveClasses,
 } from '~/utils/theme-classes';
 import { cn } from '~/lib/utils';
-import { Link, useFetcher } from '@remix-run/react';
+import {
+  Link,
+  useFetcher,
+  useLoaderData,
+  isRouteErrorResponse,
+  useRouteError,
+} from '@remix-run/react';
+import { json, type LoaderFunctionArgs } from '@remix-run/node';
+import { requireUser } from '~/utils/session.server';
 import type { UserAchievement } from '~/types/achievements';
+import { getErrorMessage } from '~/utils/errorMessages';
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+
+  if (isRouteErrorResponse(error)) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center p-4">
+        <div className="text-center">
+          <h1 className={cn('text-2xl font-bold', textClasses.primary)}>
+            {getErrorMessage(error.status).title}
+          </h1>
+          <p className={cn('mt-2', textClasses.secondary)}>
+            {getErrorMessage(error.status).description}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full flex-col items-center justify-center p-4">
+      <div className="text-center">
+        <h1 className={cn('text-2xl font-bold', textClasses.primary)}>
+          Unexpected Error
+        </h1>
+        <p className={cn('mt-2', textClasses.secondary)}>
+          An unexpected error occurred. Please try again later.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  const user = await requireUser(request);
+
+  try {
+    // Get user's progress from the session or database if needed
+    // This prevents the flash by having initial data
+
+    return json({
+      user,
+      // Add any other data needed for initial render
+    });
+  } catch (error) {
+    console.error('Error loading getting started data:', error);
+    throw json(
+      { error: 'Failed to load getting started data' },
+      { status: 500 },
+    );
+  }
+}
 
 interface Step {
   id: string;
@@ -36,7 +97,17 @@ interface Step {
   completed: boolean;
 }
 
+const STEP_ACHIEVEMENTS = {
+  'install-vscode': 'VS Code Setup',
+  'install-nodejs': 'Node.js Ready',
+  'install-pnpm': 'PNPM Power',
+  'create-remix-project': 'Remix Project Created',
+  'install-dependencies': 'Dependencies Installed',
+  'start-dev-server': 'Development Server Running',
+} as const;
+
 export default function GettingStartedRoute() {
+  const { user } = useLoaderData<typeof loader>();
   const [activeTab, setActiveTab] = useState<'windows' | 'mac'>('windows');
   const fetcher = useFetcher();
   const [steps, setSteps] = useState<Step[]>([
@@ -358,9 +429,20 @@ export default function GettingStartedRoute() {
     );
 
     if (!step.completed) {
+      // Track individual step achievement
       fetcher.submit(
-        { stepId: step.id },
-        { method: 'post', action: '/actions/learning-progress' },
+        {
+          achievementType: 'getting-started',
+          stepId: step.id,
+          achievementName:
+            STEP_ACHIEVEMENTS[step.id as keyof typeof STEP_ACHIEVEMENTS],
+          progress: index + 1,
+          totalSteps: steps.length,
+        },
+        {
+          method: 'post',
+          action: '/api/track-achievement',
+        },
       );
     }
   };
