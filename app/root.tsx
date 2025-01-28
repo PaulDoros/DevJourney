@@ -70,14 +70,18 @@ export const links: LinksFunction = () => [
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUserFromSession(request);
-  const [userAchievementsResponse] = await Promise.all([
-    supabase
-      .from('user_achievements')
-      .select('*, achievement:achievements(*)')
-      .eq('user_id', user.id),
-  ]);
 
-  const userAchievements = userAchievementsResponse.data || [];
+  let userAchievements: UserAchievement[] = [];
+
+  if (user) {
+    const [userAchievementsResponse] = await Promise.all([
+      supabase
+        .from('user_achievements')
+        .select('*, achievement:achievements(*)')
+        .eq('user_id', user.id),
+    ]);
+    userAchievements = userAchievementsResponse.data || [];
+  }
 
   return json({
     user,

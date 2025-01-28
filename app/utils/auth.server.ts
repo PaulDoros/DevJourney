@@ -30,26 +30,23 @@ export async function getSession(request: Request) {
 
 // Get user from session
 export async function getUserFromSession(request: Request) {
-  const userId = await getUserId(request);
-  if (!userId) return null;
+  const session = await getSession(request);
+  const userId = session.get('userId');
 
-  const { supabase } = createServerSupabase(request);
+  if (!userId) return null;
 
   try {
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
       .eq('id', userId)
-      .maybeSingle();
+      .single();
 
-    if (error) {
-      console.error('Profile fetch error:', error);
-      return null;
-    }
+    if (error || !user) return null;
 
     return user;
   } catch (error) {
-    console.error('Auth session error:', error);
+    console.error('Error fetching user:', error);
     return null;
   }
 }
@@ -235,4 +232,23 @@ export async function getUserId(request: Request) {
   const userId = session.get('userId');
   if (!userId) return null;
   return userId;
+}
+
+export async function requireUser(request: Request) {
+  const user = await getUserFromSession(request);
+
+  if (!user) {
+    throw redirect('/login');
+  }
+
+  return user;
+}
+
+export async function logout(request: Request) {
+  const session = await getSession(request);
+  return redirect('/', {
+    headers: {
+      'Set-Cookie': await destroySession(session),
+    },
+  });
 }

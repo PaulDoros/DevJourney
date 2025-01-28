@@ -1,8 +1,9 @@
 // Import the useTheme hook from our theme provider utility
 import { useTheme } from '~/utils/theme-provider';
-import { useFetcher } from '@remix-run/react';
+import { useFetcher, useLoaderData } from '@remix-run/react';
 import { useCallback } from 'react';
 import { debounce } from '~/utils/debounce';
+import type { loader } from '~/root';
 
 interface ThemeResponse {
   success?: boolean;
@@ -14,16 +15,20 @@ export function ThemeSwitcher() {
   // Get current theme and setTheme function from our theme context
   const { theme, setTheme } = useTheme();
   const fetcher = useFetcher<ThemeResponse>();
+  const { user } = useLoaderData<typeof loader>();
 
   // Debounce the achievement tracking to prevent too many requests
   const trackThemeChange = useCallback(
     debounce((newTheme: string) => {
-      fetcher.submit(
-        { theme: newTheme },
-        { method: 'POST', action: '/api/theme' },
-      );
+      // Only track theme changes if user is logged in
+      if (user) {
+        fetcher.submit(
+          { theme: newTheme },
+          { method: 'POST', action: '/api/theme' },
+        );
+      }
     }, 1000),
-    [fetcher],
+    [fetcher, user],
   );
   const handleThemeChange = (
     newTheme: 'light' | 'dark' | 'retro' | 'multi',
