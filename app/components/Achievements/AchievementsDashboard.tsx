@@ -1,4 +1,5 @@
 import { cn } from '~/lib/utils';
+import { AchievementsProgress } from './AchievementsProgress';
 import type { Achievement, UserAchievement } from '~/types/achievements';
 
 interface AchievementsDashboardProps {
@@ -74,7 +75,14 @@ export function AchievementsDashboard({
     allAchievements.find((a) => a.name === achievementName);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold">Achievement Progress</h2>
+        <AchievementsProgress
+          userAchievements={userAchievements}
+          allAchievements={allAchievements}
+        />
+      </div>
       {/* Points Overview */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-light-text/90 retro:text-retro-text/90 multi:text-white/90 dark:text-dark-text/90">

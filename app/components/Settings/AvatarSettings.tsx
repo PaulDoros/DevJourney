@@ -12,53 +12,34 @@ import { useState, useEffect } from 'react';
 import { Modal } from '~/components/ui/Modal';
 
 import { AnimatedAvatar } from '~/components/AnimatedAvatar';
+import {
+  type User,
+  type Achievement,
+  type UploadSlot,
+  type PersonalAvatar,
+  type UserAchievementSimple,
+  type AvatarSettingsProps,
+  UPLOAD_SLOTS,
+} from '~/types';
 
 // Define a simplified achievement type for what we actually need
-interface Achievement {
-  id: string;
-  name: string;
-  description: string;
-  points: number;
-}
-
-interface UserAchievementSimple {
-  id: string;
-  achievement: Achievement;
-}
-
-interface AvatarWithRequirements extends AvatarPreset {
-  requirements?: {
-    points?: number;
-    achievement?: string;
-    locked: boolean;
-    reason?: string;
-  };
-}
-
-interface AvatarSettingsProps {
-  user: {
-    id: string;
-    username: string;
-    is_guest: boolean;
-    avatar_url: string | null;
-  };
-  achievements: UserAchievementSimple[];
-}
 
 // Move helper functions outside the component
 function checkAvatarLock(
   avatar: AvatarPreset,
-  achievements: UserAchievementSimple[],
+  achievements: Achievement[],
   totalPoints: number,
 ): boolean {
   if (!avatar.requirements) return false;
 
-  const { points, achievement } = avatar.requirements;
+  const { points, achievement: requiredAchievement } = avatar.requirements;
 
   if (points && totalPoints < points) return true;
   if (
-    achievement &&
-    !achievements.some((ua) => ua.achievement.name === achievement)
+    requiredAchievement &&
+    !achievements.some(
+      (achievement) => achievement.name === requiredAchievement,
+    )
   )
     return true;
 
@@ -67,21 +48,23 @@ function checkAvatarLock(
 
 function getLockReason(
   avatar: AvatarPreset,
-  achievements: UserAchievementSimple[],
+  achievements: Achievement[],
   totalPoints: number,
 ): string | undefined {
   if (!avatar.requirements) return undefined;
 
-  const { points, achievement } = avatar.requirements;
+  const { points, achievement: requiredAchievement } = avatar.requirements;
 
   if (points && totalPoints < points) {
     return `Requires ${points} points (you have ${totalPoints})`;
   }
   if (
-    achievement &&
-    !achievements.some((ua) => ua.achievement.name === achievement)
+    requiredAchievement &&
+    !achievements.some(
+      (achievement) => achievement.name === requiredAchievement,
+    )
   ) {
-    return `Unlock "${achievement}" achievement first`;
+    return `Unlock "${requiredAchievement}" achievement first`;
   }
 
   return undefined;
@@ -119,21 +102,24 @@ export function AvatarSettings({ user, achievements }: AvatarSettingsProps) {
     isCurrentAvatar: boolean;
   }>({ show: false, isCurrentAvatar: false, avatarName: '' });
   const { personalAvatars = [] } = useLoaderData<{
-    personalAvatars: Array<{
-      name: string;
-      url: string;
-      size: number;
-      created_at: string;
-    }>;
+    personalAvatars: PersonalAvatar[];
   }>();
 
-  // Calculate total points from achievements
   const totalPoints = achievements.reduce(
-    (total, ua) => total + (ua.achievement?.points || 0),
+    (total, achievement) => total + achievement.points,
     0,
   );
 
-  // Calculate available avatars with requirements
+  const avatarCount = personalAvatars.length;
+  const availableSlots = UPLOAD_SLOTS.filter(
+    (slot) => totalPoints >= slot.requiredPoints,
+  ).length;
+  const isAtLimit = avatarCount >= availableSlots;
+
+  // Find next slot to unlock
+  const nextSlot = UPLOAD_SLOTS.find(
+    (slot) => totalPoints < slot.requiredPoints,
+  );
 
   const isDeleting =
     navigation.state === 'submitting' &&
@@ -198,17 +184,44 @@ export function AvatarSettings({ user, achievements }: AvatarSettingsProps) {
         {/* Personal Avatars Grid */}
 
         <div className="mt-8 border-t border-gray-200 pt-8 dark:border-gray-700">
-          <h3 className="mb-4 text-lg font-medium">Your Uploaded Pictures</h3>
-          <p className="pb-2 text-sm text-light-text/80 retro:text-retro-text/80 multi:text-white/80 dark:text-dark-text/80">
-            Upload new pictures to your collection or choose from presets.
-            Supported formats: JPG, PNG, GIF (max 5MB)
-          </p>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
-            <Form
-              method="post"
-              encType="multipart/form-data"
-              className="max-w-[120px]"
-            >
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-medium">Your Uploaded Pictures</h3>
+              <p className="mt-1 text-sm text-light-text/70 dark:text-dark-text/70">
+                Upload new pictures to your collection or choose from presets
+              </p>
+            </div>
+            <div className="flex flex-col items-end gap-1">
+              <div className="flex items-center gap-2">
+                {UPLOAD_SLOTS.map((slot) => {
+                  const isUnlocked = totalPoints >= slot.requiredPoints;
+                  return (
+                    <div
+                      key={slot.slot}
+                      className={cn(
+                        'group relative h-2.5 w-2.5 rounded-full transition-colors',
+                        isUnlocked
+                          ? 'bg-light-accent dark:bg-dark-accent'
+                          : 'bg-gray-200 dark:bg-gray-700',
+                      )}
+                    >
+                      <div className="absolute bottom-full right-1/2 mb-2 hidden translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white group-hover:block">
+                        {isUnlocked
+                          ? `Slot ${slot.slot} unlocked`
+                          : `${slot.requiredPoints} points needed`}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <span className="text-sm font-medium text-light-text/70 dark:text-dark-text/70">
+                {avatarCount}/{availableSlots} slots used
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+            <div className="relative max-w-[120px]">
               <input
                 type="file"
                 name="avatar"
@@ -216,61 +229,96 @@ export function AvatarSettings({ user, achievements }: AvatarSettingsProps) {
                 multiple
                 className="hidden"
                 id="avatar-upload"
-                onChange={(e) => {
-                  if (
-                    e.target.form &&
-                    e.target.files &&
-                    e.target.files.length > 0
-                  ) {
-                    // Check file sizes before submitting
-                    const hasLargeFile = Array.from(e.target.files).some(
-                      (file) => file.size > 5 * 1024 * 1024,
-                    );
-
-                    if (hasLargeFile) {
-                      alert(
-                        'One or more files are too large. Maximum size is 5MB.',
-                      );
-                      return;
-                    }
-
-                    submit(e.target.form);
-                  }
-                }}
-                disabled={isUploading}
+                disabled={
+                  isUploading ||
+                  isAtLimit ||
+                  totalPoints < UPLOAD_SLOTS[0].requiredPoints
+                }
               />
               <label
                 htmlFor="avatar-upload"
                 className={cn(
-                  'group relative flex aspect-square w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50/50 transition-all duration-200',
-                  'hover:border-light-accent hover:bg-light-accent/5 active:scale-95',
-                  'retro:hover:border-retro-accent retro:hover:bg-retro-accent/5',
-                  'multi:hover:border-white/50 multi:hover:bg-white/5',
-                  'dark:border-gray-600 dark:bg-gray-800/30 dark:hover:border-dark-accent dark:hover:bg-dark-accent/5',
-                  isUploading && 'cursor-not-allowed opacity-50',
+                  'group flex aspect-square w-full cursor-pointer items-center justify-center rounded-lg border-2 border-dashed transition-all duration-200',
+                  isAtLimit || totalPoints < UPLOAD_SLOTS[0].requiredPoints
+                    ? 'cursor-not-allowed border-gray-300 bg-gray-100 dark:border-gray-600 dark:bg-gray-800'
+                    : [
+                        'border-gray-300 bg-gray-50/50 hover:border-light-accent hover:bg-light-accent/5',
+                        'retro:hover:border-retro-accent retro:hover:bg-retro-accent/5',
+                        'multi:hover:border-white/50 multi:hover:bg-white/5',
+                        'dark:border-gray-600 dark:bg-gray-800/30 dark:hover:border-dark-accent dark:hover:bg-dark-accent/5',
+                      ],
+                  isUploading && 'pointer-events-none opacity-50',
                 )}
+                onClick={(e) => {
+                  if (
+                    isAtLimit ||
+                    totalPoints < UPLOAD_SLOTS[0].requiredPoints
+                  ) {
+                    e.preventDefault();
+                  }
+                }}
               >
                 <div className="flex flex-col items-center gap-2 p-2 text-center">
                   <svg
-                    className="h-8 w-8 text-gray-400 group-hover:text-light-accent retro:group-hover:text-retro-accent multi:group-hover:text-white/90 dark:group-hover:text-dark-accent"
+                    className={cn(
+                      'h-8 w-8',
+                      isAtLimit || totalPoints < UPLOAD_SLOTS[0].requiredPoints
+                        ? 'text-gray-400'
+                        : 'text-gray-400 group-hover:text-light-accent',
+                    )}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                    />
+                    {isAtLimit ||
+                    totalPoints < UPLOAD_SLOTS[0].requiredPoints ? (
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 15v2m0 0v2m0-2h2m-2 0H10m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    ) : (
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      />
+                    )}
                   </svg>
-                  <span className="text-xs font-medium text-gray-500 group-hover:text-light-accent retro:group-hover:text-retro-accent multi:group-hover:text-white/90 dark:text-gray-400 dark:group-hover:text-dark-accent">
-                    {isUploading ? 'Uploading...' : 'Upload'}
+                  <span
+                    className={cn(
+                      'text-xs font-medium',
+                      isAtLimit || totalPoints < UPLOAD_SLOTS[0].requiredPoints
+                        ? 'text-gray-500'
+                        : 'text-gray-500 group-hover:text-light-accent',
+                    )}
+                  >
+                    {isUploading
+                      ? 'Uploading...'
+                      : totalPoints < UPLOAD_SLOTS[0].requiredPoints
+                        ? `Need ${UPLOAD_SLOTS[0].requiredPoints} Points`
+                        : isAtLimit
+                          ? nextSlot
+                            ? `Need ${nextSlot.requiredPoints} Points`
+                            : 'All slots used'
+                          : 'Upload'}
                   </span>
-                  <span className="text-[10px] text-gray-400">Max 5MB</span>
+                  <span className="text-[10px] text-gray-400">
+                    {totalPoints < UPLOAD_SLOTS[0].requiredPoints
+                      ? `${totalPoints}/${UPLOAD_SLOTS[0].requiredPoints}`
+                      : isAtLimit
+                        ? nextSlot
+                          ? `${totalPoints}/${nextSlot.requiredPoints}`
+                          : 'All slots used'
+                        : 'Max 5MB'}
+                  </span>
                 </div>
               </label>
-            </Form>
+            </div>
+
+            {/* Rest of the personal avatars grid */}
             {personalAvatars.length > 0 &&
               personalAvatars.map((avatar) => (
                 <div

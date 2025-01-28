@@ -8,23 +8,42 @@ export async function unlockAchievement(
 ) {
   const { supabase } = createServerSupabase(request);
 
+  // Check if already unlocked
+  const { data: existing } = await supabase
+    .from('user_achievements')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('achievement_id', achievementId)
+    .single();
+
+  if (existing) {
+    return { success: true, alreadyUnlocked: true };
+  }
+
   const { data, error } = await supabase
     .from('user_achievements')
     .insert({
       user_id: userId,
       achievement_id: achievementId,
     })
-    .select('*')
+    .select('*, achievement:achievements(*)')
     .single();
 
-  if (error) throw error;
-  return data;
+  if (error) {
+    console.error('Error unlocking achievement:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true, alreadyUnlocked: false, achievement: data };
 }
 
-export async function getUserAchievements(request: Request, userId: string) {
+export async function getUserAchievements(
+  request: Request,
+  userId: string,
+): Promise<UserAchievement[]> {
   const { supabase } = createServerSupabase(request);
 
-  const { data: achievements, error } = await supabase
+  const { data, error } = await supabase
     .from('user_achievements')
     .select('*, achievement:achievements(*)')
     .eq('user_id', userId)
@@ -35,7 +54,25 @@ export async function getUserAchievements(request: Request, userId: string) {
     return [];
   }
 
-  return achievements;
+  return data || [];
+}
+
+export async function getAllAchievements(
+  request: Request,
+): Promise<Achievement[]> {
+  const { supabase } = createServerSupabase(request);
+
+  const { data, error } = await supabase
+    .from('achievements')
+    .select('*')
+    .order('points', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching all achievements:', error);
+    return [];
+  }
+
+  return data || [];
 }
 
 export async function getAvailableAvatars(request: Request, userId: string) {

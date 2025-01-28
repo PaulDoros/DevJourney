@@ -1,97 +1,66 @@
-import { cn } from '~/lib/utils';
-import type { UserAchievement } from '~/types/achievements';
+import { cn, getCategoryDisplayName } from '~/lib/utils';
+import type {
+  Achievement,
+  UserAchievement,
+  AchievementCategory,
+} from '~/types/achievements';
 
 interface AchievementsProgressProps {
-  achievements: UserAchievement[];
+  userAchievements: UserAchievement[];
+  allAchievements: Achievement[];
 }
 
-const ACHIEVEMENT_CATEGORIES = {
-  basic: {
-    name: 'Getting Started',
-    achievements: ['Welcome!', 'Theme Explorer', 'Avatar Customizer'],
-  },
-  remix: {
-    name: 'Remix Features',
-    achievements: [
-      'Remix Explorer',
-      'Data Master',
-      'Form Wizard',
-      'Route Master',
-    ],
-  },
-  themes: {
-    name: 'Theme Mastery',
-    achievements: ['Theme Master', 'Dark Side', 'Retro Lover', 'Multi Master'],
-  },
-  avatars: {
-    name: 'Avatar Collection',
-    achievements: ['Avatar Collector', 'Custom Creator', 'Style Guru'],
-  },
-  engagement: {
-    name: 'Community Engagement',
-    achievements: [
-      'Profile Perfectionist',
-      'Early Bird',
-      'Active Explorer',
-      'Social Butterfly',
-    ],
-  },
-  advanced: {
-    name: 'Advanced Skills',
-    achievements: [
-      'Type Safety Guardian',
-      'Layout Artist',
-      'Error Boundary Pro',
-      'Loader Legend',
-      'Action Hero',
-      'Component Master',
-      'Task Manager',
-      'Theme Artist',
-      'Code Warrior',
-      'Documentation Reader',
-      'Optimization Guru',
-      'Error Handler',
-      'Accessibility Champion',
-      'TypeScript Pro',
-    ],
-  },
-};
-
 export function AchievementsProgress({
-  achievements,
+  userAchievements,
+  allAchievements,
 }: AchievementsProgressProps) {
+  // Group achievements by category
+  const achievementsByCategory = allAchievements.reduce(
+    (acc, achievement) => {
+      const category = achievement.category;
+      if (!acc[category]) {
+        acc[category] = [];
+      }
+      acc[category].push(achievement);
+      return acc;
+    },
+    {} as Record<AchievementCategory, Achievement[]>,
+  );
+
   return (
     <div className="space-y-4">
-      {Object.entries(ACHIEVEMENT_CATEGORIES).map(([key, category]) => {
-        const unlockedCount = category.achievements.filter((name) =>
-          achievements.some((ua) => ua.achievement?.name === name),
-        ).length;
-        const progress = (unlockedCount / category.achievements.length) * 100;
+      {Object.entries(achievementsByCategory).map(
+        ([category, achievements]) => {
+          const unlockedCount = achievements.filter((achievement) =>
+            userAchievements.some((ua) => ua.achievement_id === achievement.id),
+          ).length;
+          const progress = (unlockedCount / achievements.length) * 100;
 
-        return (
-          <div key={key} className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-medium text-light-text/90 retro:text-retro-text/90 multi:text-white/90 dark:text-dark-text/90">
-                {category.name}
-              </span>
-              <span className="text-light-text/70 retro:text-retro-text/70 multi:text-white/70 dark:text-dark-text/70">
-                {unlockedCount}/{category.achievements.length}
-              </span>
+          return (
+            <div key={category} className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium text-light-text/90 retro:text-retro-text/90 multi:text-white/90 dark:text-dark-text/90">
+                  {getCategoryDisplayName(category as AchievementCategory)}
+                </span>
+                <span className="text-light-text/70 retro:text-retro-text/70 multi:text-white/70 dark:text-dark-text/70">
+                  {unlockedCount}/{achievements.length}
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-light-primary/20 retro:bg-retro-primary/20 multi:bg-white/10 dark:bg-dark-primary/20">
+                <div
+                  className={cn(
+                    'h-full rounded-full transition-all duration-500',
+                    progress === 100
+                      ? 'bg-green-500 retro:bg-retro-accent multi:bg-multi-accent dark:bg-green-400'
+                      : 'bg-light-accent retro:bg-retro-accent multi:bg-multi-accent dark:bg-dark-accent',
+                  )}
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-light-primary/20 retro:bg-retro-primary/20 multi:bg-white/10 dark:bg-dark-primary/20">
-              <div
-                className={cn(
-                  'h-full rounded-full transition-all duration-500',
-                  progress === 100
-                    ? 'bg-green-500 retro:bg-retro-accent multi:bg-multi-accent dark:bg-green-400'
-                    : 'bg-light-accent retro:bg-retro-accent multi:bg-multi-accent dark:bg-dark-accent',
-                )}
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-        );
-      })}
+          );
+        },
+      )}
     </div>
   );
 }

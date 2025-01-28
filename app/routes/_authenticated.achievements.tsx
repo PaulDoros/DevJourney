@@ -10,14 +10,21 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUser(request);
   const { supabase } = createServerSupabase(request);
 
-  // Get user achievements
-  const userAchievements = await getUserAchievements(request, user.id);
+  const [userAchievementsResponse, allAchievementsResponse] = await Promise.all(
+    [
+      supabase
+        .from('user_achievements')
+        .select('*, achievement:achievements(*)')
+        .eq('user_id', user.id),
+      supabase
+        .from('achievements')
+        .select('*')
+        .order('points', { ascending: false }),
+    ],
+  );
 
-  // Get all achievements
-  const { data: allAchievements } = await supabase
-    .from('achievements')
-    .select('*')
-    .order('points', { ascending: false });
+  const userAchievements = userAchievementsResponse.data || [];
+  const allAchievements = allAchievementsResponse.data || [];
 
   // Calculate total points
   const totalPoints = userAchievements.reduce(

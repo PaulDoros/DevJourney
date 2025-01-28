@@ -1,6 +1,8 @@
 import { createContext, useContext, useCallback, ReactNode } from 'react';
 import { toast, ToastContainer, TypeOptions } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { cn } from '~/lib/utils';
+import { useTheme } from '~/utils/theme-provider';
 
 type ToastContextType = {
   showToast: (message: string, type?: TypeOptions) => void;
@@ -55,11 +57,12 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined);
  * ```
  */
 export function ToastProvider({ children }: { children: ReactNode }) {
+  const { theme } = useTheme();
   const showToast = useCallback(
     (message: string, type: TypeOptions = 'default') => {
       toast(message, {
         type,
-        position: 'bottom-right',
+        position: 'top-right',
         autoClose: 5000,
         hideProgressBar: false,
         closeOnClick: true,
@@ -74,21 +77,39 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const showAchievement = useCallback((title: string, description: string) => {
     toast(
-      <div className="flex flex-col">
-        <span className="text-lg font-bold">{title}</span>
-        <span className="text-sm">{description}</span>
+      <div className="flex items-center gap-4 p-2 pr-8">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-400">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6 text-yellow-900"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <path d="M11.25 4.533A9.707 9.707 0 006 3a9.735 9.735 0 00-3.25.555.75.75 0 00-.5.707v14.25a.75.75 0 001 .707A8.237 8.237 0 016 18.75c1.995 0 3.823.707 5.25 1.886V4.533zM12.75 20.636A8.214 8.214 0 0118 18.75c.966 0 1.89.166 2.75.47a.75.75 0 001-.708V4.262a.75.75 0 00-.5-.707A9.735 9.735 0 0018 3a9.707 9.707 0 00-5.25 1.533v16.103z" />
+          </svg>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <span className="text-lg font-bold">{title}</span>
+
+          <span className="text-sm opacity-90">{description}</span>
+        </div>
       </div>,
       {
-        position: 'bottom-right',
+        position: 'top-right',
+
         autoClose: 5000,
+
         hideProgressBar: false,
+
         closeOnClick: true,
+
         pauseOnHover: true,
+
         draggable: true,
-        progress: undefined,
-        theme: 'colored',
+
         className:
-          'bg-gradient-to-r from-multi-gradient-1 via-multi-gradient-2 to-multi-gradient-3',
+          'bg-violet-600/95 text-white border border-violet-400/30 dark:bg-indigo-600/95 dark:text-white dark:border-indigo-400/30 retro:bg-retro-accent/95 retro:text-retro-text retro:border-retro-accent/30 multi:bg-gradient-to-r multi:from-fuchsia-600 multi:via-purple-600 multi:to-pink-600 multi:text-white multi:border-white/30',
       },
     );
   }, []);
@@ -133,7 +154,45 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-      <ToastContainer />
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        limit={3}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+        className="fixed !right-4 !top-4 !z-[9999] w-auto max-w-[420px]"
+        toastClassName={(context?: {
+          type?: TypeOptions;
+
+          defaultClassName?: string;
+
+          rtl?: boolean;
+        }) =>
+          cn(
+            'relative flex min-h-[64px] justify-between overflow-hidden rounded-lg p-4 cursor-pointer backdrop-blur-sm bg-opacity-95 border',
+            // Default type
+            context?.type === 'default' &&
+              'bg-light-accent/90 text-light-text border-light-accent/30 dark:bg-dark-accent/90 dark:text-dark-text dark:border-dark-accent/30 retro:bg-retro-accent/95 retro:text-retro-text retro:border-retro-accent/30 multi:bg-gradient-to-r multi:from-multi-gradient-3 multi:via-multi-gradient-1 multi:to-multi-gradient-2 multi:text-white multi:border-white/30',
+            // Success type
+            context?.type === 'success' &&
+              'bg-emerald-600/95 text-white border-emerald-400/50 retro:bg-retro-success/95 retro:text-retro-text retro:border-retro-accent/30',
+            // Error type
+            context?.type === 'error' &&
+              'bg-rose-600/95 text-white border-rose-400/50 retro:bg-retro-error/95 retro:text-retro-text retro:border-retro-accent/30',
+            // Info type
+            context?.type === 'info' &&
+              'bg-sky-600/95 text-white border-sky-400/50 retro:bg-retro-info/95 retro:text-retro-text retro:border-retro-accent/30',
+            // Warning type
+            context?.type === 'warning' &&
+              'bg-amber-600/95 text-white border-amber-400/50 retro:bg-retro-warning/95 retro:text-retro-text retro:border-retro-accent/30',
+          )
+        }
+      />
     </ToastContext.Provider>
   );
 }

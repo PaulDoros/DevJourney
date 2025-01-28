@@ -1,10 +1,21 @@
+export type AchievementCategory =
+  | 'getting-started'
+  | 'remix-features'
+  | 'theme-mastery'
+  | 'avatar-collection'
+  | 'community-engagement'
+  | 'advanced-skills'
+  | 'testing';
+
 export interface Achievement {
   id: string;
   name: string;
   description: string;
   points: number;
+  category: AchievementCategory;
   component_id: string | null;
   icon_url: string | null;
+  preset_avatar_id: string | null;
   created_at: string;
 }
 
@@ -13,7 +24,7 @@ export interface UserAchievement {
   user_id: string;
   achievement_id: string;
   unlocked_at: string;
-  achievement: Achievement;
+  achievement?: Achievement;
 }
 
 export interface Avatar {
@@ -25,13 +36,12 @@ export interface Avatar {
   createdAt: string;
 }
 
-export interface AchievementResponse {
-  user: {
-    id: string;
-    username: string;
-    avatar_url: string | null;
-    [key: string]: any;
-  };
-  achievements: UserAchievement[];
-  totalPoints: number;
-}
+// Component and theme related types
+export type ComponentId =
+  | 'use-fetcher'
+  | 'loader-data'
+  | 'form-validation'
+  | 'nested-routing'
+  | 'toast-test';
+
+export type ThemeId = 'dark' | 'retro' | 'multi';
