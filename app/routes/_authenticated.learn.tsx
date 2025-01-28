@@ -36,26 +36,27 @@ export default function LearnRoute() {
       </div>
 
       <Tabs defaultValue={currentPath} className="w-full">
-        <TabsList className="mb-8">
-          <Link to="/learn/getting-started">
-            <TabsTrigger value="/learn/getting-started">
-              Getting Started
-            </TabsTrigger>
-          </Link>
-          <Link to="/learn/tech-stack">
-            <TabsTrigger value="/learn/tech-stack">Tech Stack</TabsTrigger>
-          </Link>
-          <Link to="/learn/remix">
-            <TabsTrigger value="/learn/remix">Remix</TabsTrigger>
-          </Link>
-          <Link to="/learn/tailwind">
-            <TabsTrigger value="/learn/tailwind">Tailwind CSS</TabsTrigger>
-          </Link>
-          <Link to="/learn/supabase">
-            <TabsTrigger value="/learn/supabase">Supabase</TabsTrigger>
-          </Link>
-        </TabsList>
-
+        <div className="mb-2 overflow-x-auto px-6 sm:-mx-0 sm:overflow-visible sm:px-0 sm:pb-0">
+          <TabsList className="mb-8">
+            <Link to="/learn/getting-started">
+              <TabsTrigger value="/learn/getting-started">
+                Getting Started
+              </TabsTrigger>
+            </Link>
+            <Link to="/learn/tech-stack">
+              <TabsTrigger value="/learn/tech-stack">Tech Stack</TabsTrigger>
+            </Link>
+            <Link to="/learn/remix">
+              <TabsTrigger value="/learn/remix">Remix</TabsTrigger>
+            </Link>
+            <Link to="/learn/tailwind">
+              <TabsTrigger value="/learn/tailwind">Tailwind CSS</TabsTrigger>
+            </Link>
+            <Link to="/learn/supabase">
+              <TabsTrigger value="/learn/supabase">Supabase</TabsTrigger>
+            </Link>
+          </TabsList>
+        </div>
         <div className={cn('rounded-lg border p-6', cardClasses.base)}>
           <Outlet />
         </div>
