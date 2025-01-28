@@ -125,8 +125,9 @@ export default function App() {
   const { userAchievements } = useLoaderData<typeof loader>();
 
   useAchievementListener(userAchievements);
+
   return (
-    <Suspense fallback={<DefaultErrorFallback />}>
+    <Suspense fallback={null}>
       <AnimatePresence mode="wait" initial={false}>
         <PageTransition key={location.pathname}>
           <Outlet />

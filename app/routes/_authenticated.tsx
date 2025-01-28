@@ -13,15 +13,17 @@ import {
   getAchievementByName,
 } from '~/services/achievements.server';
 import { FirstAchievementModal } from '~/components/Achievements/FirstAchievementModal';
+import type { UserAchievement } from '~/types/achievements';
 
 export async function loader({ request }: LoaderFunctionArgs) {
   try {
     const user = await requireUser(request);
 
     // Get user achievements
-    const achievements = await getUserAchievements(request, user.id).catch(
-      () => [],
-    );
+    const achievements: UserAchievement[] = await getUserAchievements(
+      request,
+      user.id,
+    ).catch(() => []);
 
     // Check if this is first login and user doesn't have the welcome achievement
     const hasWelcomeAchievement = achievements.some(
@@ -43,7 +45,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
             welcomeAchievement.id,
           );
           if (unlockedAchievement.success && unlockedAchievement.achievement) {
-            achievements.push(unlockedAchievement.achievement);
+            achievements.push(
+              unlockedAchievement.achievement as UserAchievement,
+            );
           }
         }
       } catch (error: unknown) {
@@ -84,15 +88,14 @@ export default function AuthenticatedLayout() {
   const [showFirstAchievementModal, setShowFirstAchievementModal] =
     useState(false);
 
-  const isLoading = navigation.state === 'loading';
-
   useEffect(() => {
     if (isFirstLogin) {
       setShowFirstAchievementModal(true);
     }
   }, [isFirstLogin]);
 
-  if (isLoading) {
+  // Only show loading during actual navigation, not during initial load
+  if (navigation.state === 'loading' && navigation.location) {
     return <AuthenticatedLayoutLoading />;
   }
 
