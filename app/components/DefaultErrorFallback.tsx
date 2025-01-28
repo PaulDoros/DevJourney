@@ -5,6 +5,7 @@ import {
   Meta,
   Scripts,
   ScrollRestoration,
+  type ErrorResponse,
 } from '@remix-run/react';
 import { getErrorMessage } from '~/utils/errorMessages';
 import { ThemeSwitcher } from './ThemeSwitcher';
@@ -12,7 +13,7 @@ import type { ErrorDescription } from '~/utils/errorMessages';
 
 interface DefaultErrorFallbackProps {
   message?: string;
-  error?: Error | Response;
+  error?: Error | Response | ErrorResponse;
 }
 
 // Theme blocking script
