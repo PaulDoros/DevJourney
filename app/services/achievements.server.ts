@@ -1,13 +1,6 @@
 import { createServerSupabase } from '~/utils/supabase';
 import type { Achievement, UserAchievement } from '~/types/achievements';
 
-// Learning section achievement IDs
-const LEARNING_ACHIEVEMENTS = {
-  ACTIVE_EXPLORER: 'ec80c7e3-b9b1-448c-bec1-8d83c2011272', // "Visit all main sections"
-  DOCUMENTATION_READER: '2f5c3e1b-42ce-422b-8049-5c12bab1b1c6', // "Read all component documentation"
-  REMIX_EXPLORER: 'bbd02515-4462-4199-ae8e-00b3fe610788', // "Learn and use Remix core features"
-};
-
 export async function unlockAchievement(
   request: Request,
   userId: string,
@@ -251,79 +244,4 @@ export async function checkAndUnlockThemeAchievement(
   }
 
   return themeAchievement;
-}
-
-// Track visited learning sections
-export async function trackLearningSection(
-  request: Request,
-  userId: string,
-  section: string,
-) {
-  const { supabase } = createServerSupabase(request);
-
-  // First, get user's visited sections
-  const { data: visitedSections } = await supabase
-    .from('user_learning_progress')
-    .select('visited_sections')
-    .eq('user_id', userId)
-    .single();
-
-  let sections = visitedSections?.visited_sections || [];
-  if (!sections.includes(section)) {
-    sections.push(section);
-
-    // Update visited sections
-    await supabase
-      .from('user_learning_progress')
-      .upsert({ user_id: userId, visited_sections: sections })
-      .eq('user_id', userId);
-
-    // Check for achievements
-    if (sections.length === 5) {
-      // If user has visited all main sections
-      await unlockAchievement(
-        request,
-        userId,
-        LEARNING_ACHIEVEMENTS.ACTIVE_EXPLORER,
-      );
-    }
-
-    // Section-specific achievements
-    switch (section) {
-      case 'remix':
-        await unlockAchievement(
-          request,
-          userId,
-          LEARNING_ACHIEVEMENTS.REMIX_EXPLORER,
-        );
-        break;
-      // Add more section-specific achievements as needed
-    }
-  }
-
-  return sections;
-}
-
-// Check if user has completed all documentation sections
-export async function checkDocumentationProgress(
-  request: Request,
-  userId: string,
-) {
-  const { supabase } = createServerSupabase(request);
-
-  const { data: progress } = await supabase
-    .from('user_learning_progress')
-    .select('completed_docs')
-    .eq('user_id', userId)
-    .single();
-
-  if (progress?.completed_docs) {
-    await unlockAchievement(
-      request,
-      userId,
-      LEARNING_ACHIEVEMENTS.DOCUMENTATION_READER,
-    );
-  }
-
-  return progress?.completed_docs || false;
 }

@@ -1,28 +1,26 @@
-import { Outlet, useLocation, useLoaderData } from '@remix-run/react';
+import { Outlet } from '@remix-run/react';
 import { Tabs, TabsList, TabsTrigger } from '~/components/ui/Tabs';
-import { Link } from '@remix-run/react';
+import { Link, useLocation } from '@remix-run/react';
 import { textClasses, cardClasses } from '~/utils/theme-classes';
 import { cn } from '~/lib/utils';
-import { json, type LoaderFunctionArgs } from '@remix-run/node';
+import { LoaderFunctionArgs, json } from '@remix-run/node';
 import { requireUser } from '~/utils/session.server';
-import { trackLearningSection } from '~/services/achievements.server';
+import { checkAndUnlockLearningAchievement } from '~/services/learning-achievements.server';
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request, params }: LoaderFunctionArgs) {
   const user = await requireUser(request);
   const url = new URL(request.url);
-  const section = url.pathname.split('/')[2]; // Get section from URL: /learn/[section]
+  const currentSection = url.pathname.split('/').pop() || 'getting-started';
 
-  if (section) {
-    await trackLearningSection(request, user.id, section);
-  }
+  // Track progress and check for achievements
+  await checkAndUnlockLearningAchievement(request, user.id, currentSection);
 
-  return json({ user });
+  return json({ ok: true });
 }
 
 export default function LearnRoute() {
   const location = useLocation();
   const currentPath = location.pathname;
-  const { user } = useLoaderData<typeof loader>();
 
   return (
     <div className="container mx-auto px-4 py-8">

@@ -1,11 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
-import {
-  cardClasses,
-  textClasses,
-  interactiveClasses,
-} from '~/utils/theme-classes';
+import { cardClasses, textClasses } from '~/utils/theme-classes';
 import { cn } from '~/lib/utils';
 
 interface Step {
@@ -87,7 +83,9 @@ export default function GettingStartedRoute() {
                 </h3>
                 <p className={textClasses.secondary}>{step.description}</p>
                 {step.command && (
-                  <pre className="mt-2 rounded bg-gray-100 p-2 font-mono text-sm dark:bg-gray-900">
+                  <pre
+                    className={`mt-2 rounded bg-gray-100 p-2 font-mono text-sm text-black dark:bg-gray-900 dark:text-white`}
+                  >
                     {step.command}
                   </pre>
                 )}
