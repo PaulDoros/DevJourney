@@ -98,7 +98,7 @@ export const DesktopSidebar = ({
     return (
       <div
         className={cn(
-          'hidden h-full w-[200px] flex-shrink-0 border-t-0 px-4 py-4 md:flex md:flex-col',
+          'hidden h-full w-[70px] flex-shrink-0 border-t-0 px-4 py-4 md:flex md:flex-col',
           'bg-light-secondary',
           'retro:bg-retro-secondary',
           'multi:bg-multi-primary/60 multi:backdrop-blur-sm',
@@ -113,8 +113,9 @@ export const DesktopSidebar = ({
 
   return (
     <motion.div
+      initial={{ width: '70px' }}
       className={cn(
-        'hidden h-full w-[200px] flex-shrink-0 border-t-0 px-4 py-4 md:flex md:flex-col',
+        'hidden h-full flex-shrink-0 border-t-0 px-4 py-4 md:flex md:flex-col',
         'bg-light-secondary',
         'retro:bg-retro-secondary',
         'multi:bg-multi-primary/60 multi:backdrop-blur-sm',
@@ -122,7 +123,11 @@ export const DesktopSidebar = ({
         className,
       )}
       animate={{
-        width: animate ? (open ? '200px' : '70px') : '200px',
+        width: animate ? (open ? '200px' : '70px') : '70px',
+      }}
+      transition={{
+        duration: 0.2,
+        ease: 'easeInOut',
       }}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
