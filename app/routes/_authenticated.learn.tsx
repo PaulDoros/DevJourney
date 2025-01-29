@@ -48,6 +48,9 @@ export default function LearnRoute() {
             <Link to="/learn/tech-stack">
               <TabsTrigger value="/learn/tech-stack">Tech Stack</TabsTrigger>
             </Link>
+            <Link to="/learn/react">
+              <TabsTrigger value="/learn/react">React</TabsTrigger>
+            </Link>
             <Link to="/learn/remix">
               <TabsTrigger value="/learn/remix">Remix</TabsTrigger>
             </Link>
