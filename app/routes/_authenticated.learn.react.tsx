@@ -402,232 +402,6 @@ const handleSubmit = (e) => {
       completed: false,
       difficulty: 'intermediate',
     },
-    {
-      id: 'custom-hooks',
-      title: 'Custom Hooks: Create Reusable Logic',
-      description:
-        'Learn to create your own hooks to share logic between components',
-      explanation:
-        'Custom hooks are functions that let you extract component logic into reusable functions. They start with "use" and can call other hooks.',
-      whenToUse: [
-        'When you have complex logic that needs to be reused across components',
-        'When you want to extract stateful logic from a component',
-        'When you need to share real-time data or state updates',
-        'When handling complex form validation or API calls',
-      ],
-      realWorldUses: [
-        'Authentication hook (useAuth)',
-        'Form validation hook (useForm)',
-        'Window size hook (useWindowSize)',
-        'API data fetching hook (useFetch)',
-      ],
-      code: `// Custom hook for handling form state
-function useForm(initialState = {}) {
-  const [values, setValues] = useState(initialState);
-  
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setValues(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const resetForm = () => setValues(initialState);
-  
-  return { values, handleChange, resetForm };
-}
-
-// Using the custom hook
-function SignupForm() {
-  const { values, handleChange, resetForm } = useForm({
-    username: '',
-    email: '',
-    password: ''
-  });
-
-  return (
-    <form>
-      <input
-        name="username"
-        value={values.username}
-        onChange={handleChange}
-      />
-      {/* Other form fields */}
-    </form>
-  );
-}`,
-      completed: false,
-      difficulty: 'intermediate',
-    },
-    {
-      id: 'error-boundaries',
-      title: 'Error Boundaries: Graceful Error Handling',
-      description:
-        'Learn to handle errors gracefully in your React applications',
-      explanation:
-        'Error boundaries are React components that catch JavaScript errors anywhere in their child component tree and display a fallback UI instead of crashing.',
-      whenToUse: [
-        'When you need to catch and handle errors in component trees',
-        'When you want to prevent the entire app from crashing',
-        'When you need to log errors to an error reporting service',
-        'When you want to show user-friendly error messages',
-      ],
-      realWorldUses: [
-        'Handling API errors gracefully',
-        'Catching rendering errors in components',
-        'Showing fallback UI for failed component loads',
-        'Error logging and monitoring',
-      ],
-      code: `class ErrorBoundary extends React.Component {
-        state = { hasError: false, error: null };
-        
-        static getDerivedStateFromError(error) {
-          return { hasError: true, error };
-        }
-        
-        componentDidCatch(error, errorInfo) {
-          // Log error to error reporting service
-          logErrorToService(error, errorInfo);
-        }
-        
-        render() {
-          if (this.state.hasError) {
-            return (
-              <div className="error-ui">
-                <h2>Something went wrong!</h2>
-                <button onClick={() => this.setState({ hasError: false })}>
-                  Try again
-                </button>
-              </div>
-            );
-          }
-          
-          return this.props.children;
-        }
-      }
-
-      // Using Error Boundary
-      <ErrorBoundary>
-        <UserProfile />
-      </ErrorBoundary>`,
-      completed: false,
-      difficulty: 'intermediate',
-    },
-    {
-      id: 'suspense-lazy',
-      title: 'Suspense & Lazy Loading',
-      description: 'Optimize your app with code splitting and lazy loading',
-      explanation:
-        'Suspense lets you specify loading states for parts of your app that are loading, while lazy loading helps split your code into smaller chunks that load on demand.',
-      whenToUse: [
-        'When you have large components that are not immediately needed',
-        'When you want to improve initial page load time',
-        'When implementing route-based code splitting',
-        'When showing loading states for async operations',
-      ],
-      realWorldUses: [
-        'Loading different pages/routes on demand',
-        'Lazy loading heavy UI components',
-        'Showing loading spinners during data fetch',
-        'Optimizing bundle size for better performance',
-      ],
-      code: `// Lazy loading a component
-const HeavyComponent = React.lazy(() => 
-  import('./HeavyComponent')
-);
-
-function App() {
-  return (
-    <Suspense fallback={<LoadingSpinner />}>
-      <HeavyComponent />
-    </Suspense>
-  );
-}
-
-// Route-based code splitting
-const Dashboard = React.lazy(() => 
-  import('./routes/Dashboard')
-);
-const Settings = React.lazy(() => 
-  import('./routes/Settings')
-);
-
-function App() {
-  return (
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/settings" element={<Settings />} />
-      </Routes>
-    </Suspense>
-  );
-}`,
-      completed: false,
-      difficulty: 'advanced',
-    },
-    {
-      id: 'concurrent-features',
-      title: 'Concurrent Features & Transitions',
-      description: "Learn about React 18's concurrent rendering features",
-      explanation:
-        'Concurrent features in React 18 allow you to handle multiple state updates with different priorities, making your apps more responsive.',
-      whenToUse: [
-        'When handling expensive state updates',
-        'When you need to keep the UI responsive during updates',
-        'When implementing search-as-you-type functionality',
-        'When dealing with complex animations and transitions',
-      ],
-      realWorldUses: [
-        'Implementing responsive search interfaces',
-        'Handling complex data visualizations',
-        'Managing state updates in large forms',
-        'Optimizing user interactions in complex UIs',
-      ],
-      code: `// Using useTransition for non-urgent updates
-      function SearchResults() {
-        const [query, setQuery] = useState('');
-        const [isPending, startTransition] = useTransition();
-        const [results, setResults] = useState([]);
-        
-        const handleSearch = (e) => {
-          // Urgent update: Update input immediately
-          setQuery(e.target.value);
-          
-          // Non-urgent update: Wrap in startTransition
-          startTransition(() => {
-            // Expensive search operation
-            setResults(searchDatabase(e.target.value));
-          });
-        };
-        
-        return (
-          <div>
-            <input value={query} onChange={handleSearch} />
-            {isPending ? (
-              <Spinner />
-            ) : (
-              <ResultsList results={results} />
-            )}
-          </div>
-        );
-      }
-
-      // Using useDeferredValue
-      function ProductList({ products }) {
-        const deferredProducts = useDeferredValue(products);
-        
-        return (
-          <div>
-            {deferredProducts.map(product => (
-              <ProductItem key={product.id} product={product} />
-            ))}
-          </div>
-        );
-      }`,
-      completed: false,
-      difficulty: 'advanced',
-    },
 
     // Advanced Level
     {
@@ -805,6 +579,274 @@ function ParentComponent() {
 }`,
       completed: false,
       difficulty: 'advanced',
+    },
+    {
+      id: 'custom-hooks',
+      title: 'Custom Hooks: Create Reusable Logic',
+      description:
+        'Learn to create your own hooks to share logic between components',
+      explanation:
+        'Custom hooks are functions that let you extract component logic into reusable functions. They start with "use" and can call other hooks.',
+      whenToUse: [
+        'When you have complex logic that needs to be reused across components',
+        'When you want to extract stateful logic from a component',
+        'When you need to share real-time data or state between components',
+        'When you want to create a reusable piece of behavior',
+      ],
+      realWorldUses: [
+        'Authentication hook (useAuth)',
+        'Form validation hook (useForm)',
+        'Window size tracking hook (useWindowSize)',
+        'API data fetching hook (useAPI)',
+      ],
+      code: `// Custom hook for handling form state
+function useForm(initialState = {}) {
+  const [values, setValues] = useState(initialState);
+  
+  const handleChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setValues(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  }, []);
+
+  const resetForm = useCallback(() => {
+    setValues(initialState);
+  }, [initialState]);
+
+  return { values, handleChange, resetForm };
+}
+
+// Using the custom hook
+function SignupForm() {
+  const { values, handleChange, resetForm } = useForm({
+    username: '',
+    email: '',
+    password: ''
+  });
+
+  return (
+    <form>
+      <input
+        name="username"
+        value={values.username}
+        onChange={handleChange}
+      />
+      {/* Other form fields */}
+    </form>
+  );
+}`,
+      completed: false,
+      difficulty: 'intermediate',
+    },
+    {
+      id: 'error-boundaries',
+      title: 'Error Boundaries: Graceful Error Handling',
+      description:
+        'Learn to handle errors gracefully in your React applications',
+      explanation:
+        'Error Boundaries are React components that catch JavaScript errors anywhere in their child component tree and display a fallback UI instead of crashing.',
+      whenToUse: [
+        'When you need to catch and handle errors in component trees',
+        'When you want to prevent the entire app from crashing',
+        'When you need to show user-friendly error messages',
+        'When you want to log errors to an error reporting service',
+      ],
+      realWorldUses: [
+        'Handling API errors in data fetching',
+        'Catching rendering errors in complex UI',
+        'Providing fallback UI for failed component loads',
+        'Logging errors to monitoring services',
+      ],
+      code: `class ErrorBoundary extends React.Component {
+        constructor(props) {
+          super(props);
+          this.state = { hasError: false };
+        }
+
+        static getDerivedStateFromError(error) {
+          return { hasError: true };
+        }
+
+        componentDidCatch(error, errorInfo) {
+          // Log error to an error reporting service
+          logErrorToService(error, errorInfo);
+        }
+
+        render() {
+          if (this.state.hasError) {
+            return <h1>Something went wrong.</h1>;
+          }
+
+          return this.props.children;
+        }
+      }
+
+      // Using Error Boundary
+      <ErrorBoundary>
+        <MyComponent />
+      </ErrorBoundary>`,
+      completed: false,
+      difficulty: 'advanced',
+    },
+    {
+      id: 'suspense-lazy',
+      title: 'Suspense & Lazy Loading: Optimized Loading',
+      description:
+        'Master React Suspense and lazy loading for better performance',
+      explanation:
+        'Suspense lets you specify loading states for parts of your app, while lazy loading helps split your code into smaller chunks that load on demand.',
+      whenToUse: [
+        'When you want to show loading states while data or code loads',
+        'When you need to split your app into smaller bundles',
+        'When you want to improve initial page load time',
+        'When handling slow network conditions',
+      ],
+      realWorldUses: [
+        'Loading different pages in a routing setup',
+        'Loading heavy components only when needed',
+        'Showing skeletons while content loads',
+        'Optimizing large application bundles',
+      ],
+      code: `// Lazy loading a component
+      const HeavyComponent = React.lazy(() => 
+        import('./HeavyComponent')
+      );
+
+      function App() {
+        return (
+          <Suspense 
+            fallback={<div>Loading...</div>}
+          >
+            <HeavyComponent />
+          </Suspense>
+        );
+      }
+
+      // Using Suspense for data fetching
+      function ProfilePage() {
+        return (
+          <Suspense 
+            fallback={<ProfileSkeleton />}
+          >
+            <ProfileDetails />
+            <Suspense 
+              fallback={<PostsSkeleton />}
+            >
+              <ProfilePosts />
+            </Suspense>
+          </Suspense>
+        );
+      }`,
+      completed: false,
+      difficulty: 'advanced',
+    },
+    {
+      id: 'render-props',
+      title: 'Render Props: Flexible Component Sharing',
+      description:
+        'Learn the render props pattern for sharing code between components',
+      explanation:
+        'Render props is a technique where a component receives a function as a prop that returns a React element, allowing for flexible component composition and logic sharing.',
+      whenToUse: [
+        'When you need to share code between components',
+        'When you want to make components more flexible',
+        'When children need access to parent state or methods',
+        'When building reusable component libraries',
+      ],
+      realWorldUses: [
+        'Mouse position tracking components',
+        'Data fetching components',
+        'Form validation components',
+        'Authentication wrapper components',
+      ],
+      code: `// Mouse tracking component with render prop
+      function MouseTracker({ render }) {
+        const [position, setPosition] = useState({ x: 0, y: 0 });
+        
+        useEffect(() => {
+          const handleMouseMove = (event) => {
+            setPosition({
+              x: event.clientX,
+              y: event.clientY
+            });
+          };
+          
+          window.addEventListener('mousemove', handleMouseMove);
+          return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+          };
+        }, []);
+
+        return render(position);
+      }
+
+      // Using the MouseTracker
+      <MouseTracker
+        render={({ x, y }) => (
+          <div>
+            Mouse position: {x}, {y}
+          </div>
+        )}
+      />`,
+      completed: false,
+      difficulty: 'advanced',
+    },
+    {
+      id: 'portals',
+      title: 'React Portals: Rendering Outside DOM Hierarchy',
+      description:
+        'Learn to render components outside their parent DOM hierarchy',
+      explanation:
+        'Portals provide a way to render children into a DOM node that exists outside the DOM hierarchy of the parent component, perfect for modals and overlays.',
+      whenToUse: [
+        'When creating modals or dialogs',
+        'When building tooltips or popovers',
+        'When you need to break out of parent CSS overflow',
+        'When creating floating elements',
+      ],
+      realWorldUses: [
+        'Modal dialogs',
+        'Tooltips and popovers',
+        'Floating menus',
+        'Full-screen overlays',
+      ],
+      code: `// Modal component using Portal
+      function Modal({ children, isOpen }) {
+        if (!isOpen) return null;
+        
+        return ReactDOM.createPortal(
+          <div className="modal-overlay">
+            <div className="modal-content">
+              {children}
+            </div>
+          </div>,
+          document.getElementById('modal-root')
+        );
+      }
+
+      // Using the Modal
+      function App() {
+        const [isOpen, setIsOpen] = useState(false);
+        
+        return (
+          <div>
+            <button onClick={() => setIsOpen(true)}>
+              Open Modal
+            </button>
+            
+            <Modal isOpen={isOpen}>
+              <h2>Modal Content</h2>
+              <button onClick={() => setIsOpen(false)}>
+                Close
+              </button>
+            </Modal>
+          </div>
+        );
+      }`,
+      completed: false,
+      difficulty: 'intermediate',
     },
   ]);
 
@@ -1276,7 +1318,7 @@ function ParentComponent() {
                 )}
               >
                 {difficulty === 'beginner' && '🌱 '}
-                {difficulty === 'intermediate' && '�� '}
+                {difficulty === 'intermediate' && ' '}
                 {difficulty === 'advanced' && '⚡ '}
                 {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}{' '}
                 Concepts

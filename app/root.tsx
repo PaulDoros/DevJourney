@@ -30,6 +30,7 @@ import { supabase } from './utils/supabase';
 import { UserAchievement } from './types/achievements';
 import { useAchievementListener } from './hooks/useAchivementToast';
 import { useHydrated } from 'remix-utils/use-hydrated';
+import { ThemeSwitcherError } from './components/ThemeSwitcherError';
 
 // Lazy load components that use Framer Motion
 const PageTransition = lazy(() =>
@@ -210,7 +211,7 @@ export function ErrorBoundary() {
               </div>
             </div>
             <div className="mt-8">
-              <ThemeSwitcher />
+              <ThemeSwitcherError />
             </div>
           </div>
         </ThemeProvider>
