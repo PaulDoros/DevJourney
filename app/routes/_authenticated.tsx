@@ -82,9 +82,8 @@ function AuthenticatedLayoutLoading() {
 
 export default function AuthenticatedLayout() {
   const navigation = useNavigation();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { user, achievements, isFirstLogin } = useLoaderData<typeof loader>();
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [showFirstAchievementModal, setShowFirstAchievementModal] =
     useState(false);
 

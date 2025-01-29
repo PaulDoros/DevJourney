@@ -6,6 +6,8 @@ import { cn } from '~/lib/utils';
 import { LoaderFunctionArgs, json } from '@remix-run/node';
 import { requireUser } from '~/utils/session.server';
 import { checkAndUnlockLearningAchievement } from '~/services/learning-achievements.server';
+import { Layout } from '~/root';
+import { PageLayout } from '~/components/layouts/PageLayout';
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
   const user = await requireUser(request);
@@ -23,7 +25,7 @@ export default function LearnRoute() {
   const currentPath = location.pathname;
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <PageLayout>
       <h1 className={cn('mb-8 text-4xl font-bold', textClasses.primary)}>
         Learn Dev Journey
       </h1>
@@ -61,6 +63,6 @@ export default function LearnRoute() {
           <Outlet />
         </div>
       </Tabs>
-    </div>
+    </PageLayout>
   );
 }
