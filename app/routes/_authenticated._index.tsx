@@ -145,13 +145,6 @@ export default function Index() {
             </Link>
           </div>
         </section>
-
-        <section className="space-y-4">
-          <h2 className={cn('text-xl font-semibold', textClasses.primary)}>
-            Remix Features
-          </h2>
-          <ComponentShowcase />
-        </section>
       </div>
     </PageLayout>
   );

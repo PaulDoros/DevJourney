@@ -9,9 +9,11 @@ export async function action({ request }: ActionFunctionArgs) {
 
   const achievementType = formData.get('achievementType') as string;
   const stepId = formData.get('stepId') as string;
+  const cardId = formData.get('cardId') as string;
   const achievementName = formData.get('achievementName') as string;
   const progress = Number(formData.get('progress'));
   const totalSteps = Number(formData.get('totalSteps'));
+  const totalCards = Number(formData.get('totalCards'));
 
   if (!achievementType) {
     return json({ error: 'Achievement type is required' }, { status: 400 });
@@ -51,6 +53,43 @@ export async function action({ request }: ActionFunctionArgs) {
           .from('achievements')
           .select('id')
           .eq('name', 'Setup Master')
+          .single();
+
+        if (masterAchievement) {
+          await unlockAchievement(request, user.id, masterAchievement.id);
+        }
+      }
+    } else if (achievementType === 'tech-stack') {
+      // Get the achievement ID for this tech card
+      const { data: achievement } = await supabase
+        .from('achievements')
+        .select('id')
+        .eq('name', achievementName)
+        .single();
+
+      if (achievement) {
+        // Unlock the individual tech achievement
+        await unlockAchievement(request, user.id, achievement.id);
+      }
+
+      // Check for progress achievements
+      if (progress === Math.floor(totalCards / 2)) {
+        const { data: progressAchievement } = await supabase
+          .from('achievements')
+          .select('id')
+          .eq('name', 'Tech Explorer')
+          .single();
+
+        if (progressAchievement) {
+          await unlockAchievement(request, user.id, progressAchievement.id);
+        }
+      }
+
+      if (progress === totalCards) {
+        const { data: masterAchievement } = await supabase
+          .from('achievements')
+          .select('id')
+          .eq('name', 'Tech Stack Master')
           .single();
 
         if (masterAchievement) {

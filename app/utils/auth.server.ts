@@ -243,12 +243,3 @@ export async function requireUser(request: Request) {
 
   return user;
 }
-
-export async function logout(request: Request) {
-  const session = await getSession(request);
-  return redirect('/', {
-    headers: {
-      'Set-Cookie': await destroySession(session),
-    },
-  });
-}
