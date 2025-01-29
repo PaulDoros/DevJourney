@@ -6,6 +6,7 @@ import {
   Scripts,
   ScrollRestoration,
   type ErrorResponse,
+  Link,
 } from '@remix-run/react';
 import { getErrorMessage } from '~/utils/errorMessages';
 import { ThemeSwitcher } from './ThemeSwitcher';
@@ -41,7 +42,7 @@ export function DefaultErrorFallback({
 
   return (
     <div className="bg-background text-foreground flex h-screen flex-col items-center justify-center gap-4 p-4">
-      <div className="flex flex-col items-center gap-2">
+      <div className="flex flex-col items-center gap-4">
         <h1 className="text-2xl font-bold">Oops!</h1>
         <p className="text-muted-foreground text-center">{errorMessage}</p>
         {process.env.NODE_ENV === 'development' && (
@@ -53,9 +54,18 @@ export function DefaultErrorFallback({
                 : 'Unknown error'}
           </pre>
         )}
-      </div>
-      <div className="mt-4">
-        <ThemeSwitcher />
+
+        <div className="mt-4 flex flex-col items-center gap-4">
+          <Link
+            to="/"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-4 py-2"
+          >
+            Return Home
+          </Link>
+          <div className="flex items-center gap-2">
+            <ThemeSwitcher />
+          </div>
+        </div>
       </div>
     </div>
   );

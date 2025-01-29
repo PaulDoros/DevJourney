@@ -16,6 +16,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
   return json({ user });
 }
 
+// Add difficulty level type
+type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
+
+// Update Example interface
 interface Example {
   id: string;
   title: string;
@@ -25,6 +29,7 @@ interface Example {
   whenToUse: string[];
   realWorldUses: string[];
   completed: boolean;
+  difficulty: DifficultyLevel;
 }
 
 const REACT_ACHIEVEMENTS = {
@@ -66,8 +71,15 @@ export default function ReactLearningRoute() {
   // Add to the state declarations at the top
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
+  const [demoUser, setDemoUser] = useState<{ name: string; id: number } | null>(
+    null,
+  );
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [demoError, setDemoError] = useState<string | null>(null);
 
-  const [examples] = useState<Example[]>([
+  // Update the examples state declaration
+  const [examples, setExamples] = useState<Example[]>([
+    // Beginner Level
     {
       id: 'jsx-basics',
       title: 'JSX: Writing HTML in JavaScript',
@@ -103,6 +115,7 @@ const userCard = (
   </div>
 );`,
       completed: false,
+      difficulty: 'beginner',
     },
     {
       id: 'component-basics',
@@ -143,6 +156,7 @@ function Welcome({ name }) {
   <Welcome name="Sarah" />
 </div>`,
       completed: false,
+      difficulty: 'beginner',
     },
     {
       id: 'useState-mastery',
@@ -169,194 +183,7 @@ const handleClick = () => {
   setCount(count + 1);
 };`,
       completed: false,
-    },
-    {
-      id: 'useEffect-master',
-      title: 'useEffect: Side Effects and Lifecycle',
-      description: 'Make your components react to changes!',
-      explanation:
-        'useEffect is like setting up automatic reactions. When something changes (like a user typing), useEffect can automatically do something in response.',
-      whenToUse: [
-        'When you need to fetch data from an API',
-        'When you need to subscribe to external services or events',
-        'When you need to update something based on changes to other data',
-        'When you need to clean up (like removing event listeners)',
-      ],
-      realWorldUses: [
-        'Loading user data when a page loads',
-        'Live search as user types',
-        'Updating document title',
-        'WebSocket connections',
-      ],
-      code: `useEffect(() => {
-  // This runs when text changes
-  console.log('Text changed to:', text);
-  
-  // Cleanup function (optional)
-  return () => {
-    // This runs before the next effect or when component unmounts
-    console.log('Cleaning up');
-  };
-}, [text]); // Dependencies array - effect runs when these values change`,
-      completed: false,
-    },
-    {
-      id: 'component-pro',
-      title: 'Components: Building Blocks',
-      description: 'Create reusable pieces for your interface!',
-      explanation:
-        'Components are like LEGO blocks for your website. You can create a button, card, or form once, then reuse it anywhere. They can also accept different properties to change how they look or behave.',
-      whenToUse: [
-        'When you have UI elements that repeat across your app',
-        'When you want to break down a complex interface into smaller pieces',
-        'When you need to reuse the same structure with different content',
-        'When you want to keep your code organized and maintainable',
-      ],
-      realWorldUses: [
-        'Navigation bars',
-        'Product cards in an e-commerce site',
-        'Comment sections',
-        'Form input fields',
-      ],
-      code: `// A reusable button component
-function Button({ text, onClick, variant = 'primary' }) {
-  return (
-    <button 
-      onClick={onClick}
-      className={\`btn btn-\${variant}\`}
-    >
-      {text}
-    </button>
-  );
-}
-
-// Using the component
-<Button text="Click me" onClick={() => alert('Clicked!')} />
-<Button text="Delete" variant="danger" />`,
-      completed: false,
-    },
-    {
-      id: 'props-master',
-      title: 'Props: Component Communication',
-      description: 'Pass data between components!',
-      explanation:
-        'Props are like settings you can pass to your components. Just like a TV remote controls your TV, props control how your components look and work.',
-      whenToUse: [
-        'When you need to pass data from a parent to a child component',
-        'When you want to make a component reusable with different data',
-        'When you need to pass callback functions to handle events',
-        'When you want to customize how a component looks or behaves',
-      ],
-      realWorldUses: [
-        'User profile cards with different user data',
-        'Product listings with different products',
-        'Custom buttons with different text and actions',
-        'Form fields with different labels and validations',
-      ],
-      code: `// UserCard component with props
-function UserCard({ name, role, avatar, onEdit }) {
-  return (
-    <div className="card">
-      <img src={avatar} alt={name} />
-      <h3>{name}</h3>
-      <p>{role}</p>
-      <button onClick={onEdit}>Edit Profile</button>
-    </div>
-  );
-}
-
-// Using the component
-<UserCard
-  name="John Doe"
-  role="Developer"
-  avatar="/john.jpg"
-  onEdit={() => openEditModal()}
-/>`,
-      completed: false,
-    },
-    {
-      id: 'context-expert',
-      title: 'Context: Global State Management',
-      description: 'Share data across your entire app!',
-      explanation:
-        'Context is like a TV broadcast - it lets you share information with many components at once without passing it through each component in between.',
-      whenToUse: [
-        'When you need to share data between many components',
-        'When passing props through many layers becomes cumbersome (prop drilling)',
-        'When you need app-wide settings or preferences',
-        'When you need to manage global state like user authentication',
-      ],
-      realWorldUses: [
-        'Theme settings (light/dark mode)',
-        'User authentication state',
-        'Shopping cart data',
-        'Language preferences',
-      ],
-      code: `// Create a context
-const ThemeContext = createContext();
-
-// Provider component
-function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState('light');
-
-  return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
-}
-
-// Using the context in any component
-function ThemeButton() {
-  const { theme, setTheme } = useContext(ThemeContext);
-  return (
-    <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-      Toggle Theme
-    </button>
-  );
-}`,
-      completed: false,
-    },
-    {
-      id: 'array-methods',
-      title: 'Array Methods in React',
-      description:
-        'Master the essential array methods for handling lists and data!',
-      explanation:
-        'Array methods like map, filter, and reduce are your best friends in React. They help you transform and display lists of data in a clean and efficient way.',
-      whenToUse: [
-        'When you need to display lists of items',
-        'When you need to transform data before displaying it',
-        'When you need to filter or search through data',
-        'When you need to calculate totals or combine data',
-      ],
-      realWorldUses: [
-        'Product listings with filtering and sorting',
-        'Todo lists with completion status',
-        'User tables with search functionality',
-        'Shopping cart with total calculation',
-      ],
-      code: `// Different array methods and their uses
-// 1. map - Transform each item
-const listItems = products.map(product => (
-  <ProductCard 
-    key={product.id}
-    {...product}
-  />
-));
-
-// 2. filter - Show only matching items
-const activeUsers = users.filter(user => user.isActive);
-
-// 3. find - Get a single matching item
-const currentUser = users.find(user => user.id === userId);
-
-// 4. reduce - Calculate totals
-const cartTotal = items.reduce(
-  (total, item) => total + item.price * item.quantity,
-  0
-);`,
-      completed: false,
+      difficulty: 'beginner',
     },
     {
       id: 'event-handling',
@@ -404,76 +231,49 @@ function NameInput() {
   );
 }`,
       completed: false,
+      difficulty: 'beginner',
     },
+
+    // Intermediate Level
     {
-      id: 'search-filter',
-      title: 'Search and Filter',
-      description: 'Implement search and filter functionality!',
+      id: 'props-master',
+      title: 'Props: Component Communication',
+      description: 'Pass data between components!',
       explanation:
-        'Searching and filtering are common features in modern apps. Learn how to filter lists based on user input in real-time.',
+        'Props are like settings you can pass to your components. Just like a TV remote controls your TV, props control how your components look and work.',
       whenToUse: [
-        'When you need to implement search functionality',
-        'When you need to filter data based on user input',
-        'When you want to provide real-time filtering',
-        'When you need to combine multiple filters',
+        'When you need to pass data from a parent to a child component',
+        'When you want to make a component reusable with different data',
+        'When you need to pass callback functions to handle events',
+        'When you want to customize how a component looks or behaves',
       ],
       realWorldUses: [
-        'Product search in e-commerce',
-        'Filtering blog posts by category',
-        'Email inbox search',
-        'Contact list filtering',
+        'User profile cards with different user data',
+        'Product listings with different products',
+        'Custom buttons with different text and actions',
+        'Form fields with different labels and validations',
       ],
-      code: `// Search functionality
-const filteredItems = items.filter(item =>
-  item.toLowerCase().includes(searchTerm.toLowerCase())
-);
+      code: `// UserCard component with props
+function UserCard({ name, role, avatar, onEdit }) {
+  return (
+    <div className="card">
+      <img src={avatar} alt={name} />
+      <h3>{name}</h3>
+      <p>{role}</p>
+      <button onClick={onEdit}>Edit Profile</button>
+    </div>
+  );
+}
 
-// Multiple filters
-const filteredTodos = todos
-  .filter(todo => showCompleted ? true : !todo.completed)
-  .filter(todo => 
-    todo.text.toLowerCase().includes(searchTerm.toLowerCase())
-  );`,
+// Using the component
+<UserCard
+  name="John Doe"
+  role="Developer"
+  avatar="/john.jpg"
+  onEdit={() => openEditModal()}
+/>`,
       completed: false,
-    },
-    {
-      id: 'forms-validation',
-      title: 'Forms and Validation',
-      description: 'Handle forms and validate user input!',
-      explanation:
-        'Forms are everywhere in web apps. Learn how to manage form state, handle submissions, and validate user input effectively.',
-      whenToUse: [
-        'When you need to collect user input',
-        'When you need to validate data before submission',
-        'When you need to handle multiple form fields',
-        'When you need to show error messages',
-      ],
-      realWorldUses: [
-        'User registration forms',
-        'Contact forms',
-        'Payment information forms',
-        'Profile edit forms',
-      ],
-      code: `const [errors, setErrors] = useState({});
-
-const validateForm = () => {
-  const newErrors = {};
-  if (!formData.name) newErrors.name = 'Name is required';
-  if (!formData.email) newErrors.email = 'Email is required';
-  return newErrors;
-};
-
-const handleSubmit = (e) => {
-  e.preventDefault();
-  const newErrors = validateForm();
-  if (Object.keys(newErrors).length === 0) {
-    // Submit form
-    console.log('Form is valid:', formData);
-  } else {
-    setErrors(newErrors);
-  }
-};`,
-      completed: false,
+      difficulty: 'intermediate',
     },
     {
       id: 'conditional-rendering',
@@ -518,10 +318,443 @@ function Notification({ message }) {
   );
 }`,
       completed: false,
+      difficulty: 'intermediate',
+    },
+    {
+      id: 'array-methods',
+      title: 'Array Methods in React',
+      description:
+        'Master the essential array methods for handling lists and data!',
+      explanation:
+        'Array methods like map, filter, and reduce are your best friends in React. They help you transform and display lists of data in a clean and efficient way.',
+      whenToUse: [
+        'When you need to display lists of items',
+        'When you need to transform data before displaying it',
+        'When you need to filter or search through data',
+        'When you need to calculate totals or combine data',
+      ],
+      realWorldUses: [
+        'Product listings with filtering and sorting',
+        'Todo lists with completion status',
+        'User tables with search functionality',
+        'Shopping cart with total calculation',
+      ],
+      code: `// Different array methods and their uses
+// 1. map - Transform each item
+const listItems = products.map(product => (
+  <ProductCard 
+    key={product.id}
+    {...product}
+  />
+));
+
+// 2. filter - Show only matching items
+const activeUsers = users.filter(user => user.isActive);
+
+// 3. find - Get a single matching item
+const currentUser = users.find(user => user.id === userId);
+
+// 4. reduce - Calculate totals
+const cartTotal = items.reduce(
+  (total, item) => total + item.price * item.quantity,
+  0
+);`,
+      completed: false,
+      difficulty: 'intermediate',
+    },
+    {
+      id: 'forms-validation',
+      title: 'Forms and Validation',
+      description: 'Handle forms and validate user input!',
+      explanation:
+        'Forms are everywhere in web apps. Learn how to manage form state, handle submissions, and validate user input effectively.',
+      whenToUse: [
+        'When you need to collect user input',
+        'When you need to validate data before submission',
+        'When you need to handle multiple form fields',
+        'When you need to show error messages',
+      ],
+      realWorldUses: [
+        'User registration forms',
+        'Contact forms',
+        'Payment information forms',
+        'Profile edit forms',
+      ],
+      code: `const [errors, setErrors] = useState({});
+
+const validateForm = () => {
+  const newErrors = {};
+  if (!formData.name) newErrors.name = 'Name is required';
+  if (!formData.email) newErrors.email = 'Email is required';
+  return newErrors;
+};
+
+const handleSubmit = (e) => {
+  e.preventDefault();
+  const newErrors = validateForm();
+  if (Object.keys(newErrors).length === 0) {
+    // Submit form
+    console.log('Form is valid:', formData);
+  } else {
+    setErrors(newErrors);
+  }
+};`,
+      completed: false,
+      difficulty: 'intermediate',
+    },
+    {
+      id: 'custom-hooks',
+      title: 'Custom Hooks: Create Reusable Logic',
+      description:
+        'Learn to create your own hooks to share logic between components',
+      explanation:
+        'Custom hooks are functions that let you extract component logic into reusable functions. They start with "use" and can call other hooks.',
+      whenToUse: [
+        'When you have complex logic that needs to be reused across components',
+        'When you want to extract stateful logic from a component',
+        'When you need to share real-time data or state updates',
+        'When handling complex form validation or API calls',
+      ],
+      realWorldUses: [
+        'Authentication hook (useAuth)',
+        'Form validation hook (useForm)',
+        'Window size hook (useWindowSize)',
+        'API data fetching hook (useFetch)',
+      ],
+      code: `// Custom hook for handling form state
+function useForm(initialState = {}) {
+  const [values, setValues] = useState(initialState);
+  
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setValues(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const resetForm = () => setValues(initialState);
+  
+  return { values, handleChange, resetForm };
+}
+
+// Using the custom hook
+function SignupForm() {
+  const { values, handleChange, resetForm } = useForm({
+    username: '',
+    email: '',
+    password: ''
+  });
+
+  return (
+    <form>
+      <input
+        name="username"
+        value={values.username}
+        onChange={handleChange}
+      />
+      {/* Other form fields */}
+    </form>
+  );
+}`,
+      completed: false,
+      difficulty: 'intermediate',
+    },
+    {
+      id: 'error-boundaries',
+      title: 'Error Boundaries: Graceful Error Handling',
+      description:
+        'Learn to handle errors gracefully in your React applications',
+      explanation:
+        'Error boundaries are React components that catch JavaScript errors anywhere in their child component tree and display a fallback UI instead of crashing.',
+      whenToUse: [
+        'When you need to catch and handle errors in component trees',
+        'When you want to prevent the entire app from crashing',
+        'When you need to log errors to an error reporting service',
+        'When you want to show user-friendly error messages',
+      ],
+      realWorldUses: [
+        'Handling API errors gracefully',
+        'Catching rendering errors in components',
+        'Showing fallback UI for failed component loads',
+        'Error logging and monitoring',
+      ],
+      code: `class ErrorBoundary extends React.Component {
+        state = { hasError: false, error: null };
+        
+        static getDerivedStateFromError(error) {
+          return { hasError: true, error };
+        }
+        
+        componentDidCatch(error, errorInfo) {
+          // Log error to error reporting service
+          logErrorToService(error, errorInfo);
+        }
+        
+        render() {
+          if (this.state.hasError) {
+            return (
+              <div className="error-ui">
+                <h2>Something went wrong!</h2>
+                <button onClick={() => this.setState({ hasError: false })}>
+                  Try again
+                </button>
+              </div>
+            );
+          }
+          
+          return this.props.children;
+        }
+      }
+
+      // Using Error Boundary
+      <ErrorBoundary>
+        <UserProfile />
+      </ErrorBoundary>`,
+      completed: false,
+      difficulty: 'intermediate',
+    },
+    {
+      id: 'suspense-lazy',
+      title: 'Suspense & Lazy Loading',
+      description: 'Optimize your app with code splitting and lazy loading',
+      explanation:
+        'Suspense lets you specify loading states for parts of your app that are loading, while lazy loading helps split your code into smaller chunks that load on demand.',
+      whenToUse: [
+        'When you have large components that are not immediately needed',
+        'When you want to improve initial page load time',
+        'When implementing route-based code splitting',
+        'When showing loading states for async operations',
+      ],
+      realWorldUses: [
+        'Loading different pages/routes on demand',
+        'Lazy loading heavy UI components',
+        'Showing loading spinners during data fetch',
+        'Optimizing bundle size for better performance',
+      ],
+      code: `// Lazy loading a component
+const HeavyComponent = React.lazy(() => 
+  import('./HeavyComponent')
+);
+
+function App() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <HeavyComponent />
+    </Suspense>
+  );
+}
+
+// Route-based code splitting
+const Dashboard = React.lazy(() => 
+  import('./routes/Dashboard')
+);
+const Settings = React.lazy(() => 
+  import('./routes/Settings')
+);
+
+function App() {
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/settings" element={<Settings />} />
+      </Routes>
+    </Suspense>
+  );
+}`,
+      completed: false,
+      difficulty: 'advanced',
+    },
+    {
+      id: 'concurrent-features',
+      title: 'Concurrent Features & Transitions',
+      description: "Learn about React 18's concurrent rendering features",
+      explanation:
+        'Concurrent features in React 18 allow you to handle multiple state updates with different priorities, making your apps more responsive.',
+      whenToUse: [
+        'When handling expensive state updates',
+        'When you need to keep the UI responsive during updates',
+        'When implementing search-as-you-type functionality',
+        'When dealing with complex animations and transitions',
+      ],
+      realWorldUses: [
+        'Implementing responsive search interfaces',
+        'Handling complex data visualizations',
+        'Managing state updates in large forms',
+        'Optimizing user interactions in complex UIs',
+      ],
+      code: `// Using useTransition for non-urgent updates
+      function SearchResults() {
+        const [query, setQuery] = useState('');
+        const [isPending, startTransition] = useTransition();
+        const [results, setResults] = useState([]);
+        
+        const handleSearch = (e) => {
+          // Urgent update: Update input immediately
+          setQuery(e.target.value);
+          
+          // Non-urgent update: Wrap in startTransition
+          startTransition(() => {
+            // Expensive search operation
+            setResults(searchDatabase(e.target.value));
+          });
+        };
+        
+        return (
+          <div>
+            <input value={query} onChange={handleSearch} />
+            {isPending ? (
+              <Spinner />
+            ) : (
+              <ResultsList results={results} />
+            )}
+          </div>
+        );
+      }
+
+      // Using useDeferredValue
+      function ProductList({ products }) {
+        const deferredProducts = useDeferredValue(products);
+        
+        return (
+          <div>
+            {deferredProducts.map(product => (
+              <ProductItem key={product.id} product={product} />
+            ))}
+          </div>
+        );
+      }`,
+      completed: false,
+      difficulty: 'advanced',
+    },
+
+    // Advanced Level
+    {
+      id: 'useEffect-master',
+      title: 'useEffect and Async Operations',
+      description: 'Master asynchronous operations and side effects!',
+      explanation:
+        'useEffect combined with async/await lets you handle complex operations like API calls and data fetching. Think of it as setting up a series of automated tasks that run at specific times.',
+      whenToUse: [
+        'When you need to fetch data from APIs',
+        'When you need to handle multiple async operations',
+        'When you need to manage subscriptions or cleanup',
+        'When you need to sync with external systems',
+      ],
+      realWorldUses: [
+        'Loading and updating user data',
+        'Real-time data synchronization',
+        'WebSocket connections',
+        'Complex form submissions with API calls',
+      ],
+      code: `// Advanced async/await patterns with useEffect
+function UserDashboard({ userId }) {
+  const [user, setUser] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    // Using async IIFE pattern
+    (async () => {
+      try {
+        setLoading(true);
+        // Parallel API calls
+        const [userResponse, postsResponse] = await Promise.all([
+          fetch(\`/api/users/\${userId}\`),
+          fetch(\`/api/users/\${userId}/posts\`)
+        ]);
+
+        // Handle potential errors
+        if (!userResponse.ok || !postsResponse.ok) {
+          throw new Error('Failed to fetch data');
+        }
+
+        // Parse responses
+        const userData = await userResponse.json();
+        const postsData = await postsResponse.json();
+
+        setUser(userData);
+        setPosts(postsData);
+      } catch (err) {
+        setError(err.message);
+        // Log error to monitoring service
+        console.error('Dashboard Error:', err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+
+    // Cleanup function
+    return () => {
+      // Cancel any pending requests
+      // Reset states
+      setUser(null);
+      setPosts([]);
+      setLoading(false);
+    };
+  }, [userId]);
+
+  // Component rendering logic
+  if (loading) return <LoadingSpinner />;
+  if (error) return <ErrorMessage message={error} />;
+  if (!user) return <NotFound />;
+
+  return (
+    <Dashboard user={user} posts={posts} />
+  );
+}`,
+      completed: false,
+      difficulty: 'advanced',
+    },
+    {
+      id: 'context-expert',
+      title: 'Context and Global State Management',
+      description: 'Share data across your entire app!',
+      explanation:
+        'Context is like a TV broadcast - it lets you share information with many components at once without passing it through each component in between.',
+      whenToUse: [
+        'When you need to share data between many components',
+        'When passing props through many layers becomes cumbersome (prop drilling)',
+        'When you need app-wide settings or preferences',
+        'When you need to manage global state like user authentication',
+      ],
+      realWorldUses: [
+        'Theme settings (light/dark mode)',
+        'User authentication state',
+        'Shopping cart data',
+        'Language preferences',
+      ],
+      code: `// Create a context
+const ThemeContext = createContext();
+
+// Provider component
+function ThemeProvider({ children }) {
+  const [theme, setTheme] = useState('light');
+
+  return (
+    <ThemeContext.Provider value={{ theme, setTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+// Using the context in any component
+function ThemeButton() {
+  const { theme, setTheme } = useContext(ThemeContext);
+  return (
+    <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+      Toggle Theme
+    </button>
+  );
+}`,
+      completed: false,
+      difficulty: 'advanced',
     },
     {
       id: 'performance-pro',
-      title: 'Performance Optimization: Making React Apps Faster',
+      title: 'Performance Optimization',
       description:
         'Learn to optimize your React components for better performance!',
       explanation:
@@ -571,11 +804,19 @@ function ParentComponent() {
   return <ChildComponent onClick={handleClick} />;
 }`,
       completed: false,
+      difficulty: 'advanced',
     },
   ]);
 
+  // Update the handleExampleComplete function with proper typing
   const handleExampleComplete = (index: number) => {
     const example = examples[index];
+    setExamples((prevExamples: Example[]) =>
+      prevExamples.map((ex: Example, i: number) =>
+        i === index ? { ...ex, completed: !ex.completed } : ex,
+      ),
+    );
+
     if (!example.completed) {
       fetcher.submit(
         {
@@ -621,14 +862,76 @@ function ParentComponent() {
       case 'useEffect-master':
         return (
           <div className="space-y-4">
-            <input
-              type="text"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="Type something..."
-              className="w-full rounded-md border border-gray-300 px-4 py-2 dark:border-gray-600"
-            />
-            <p>Length: {text.length} characters</p>
+            <div className="rounded-lg border p-4">
+              <h5 className="mb-2 font-semibold">Async Data Loading Demo</h5>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium">
+                    Simulate API Call
+                  </label>
+                  <button
+                    onClick={async () => {
+                      setDemoLoading(true);
+                      setDemoError(null);
+                      try {
+                        // Simulate API delay
+                        await new Promise((resolve) =>
+                          setTimeout(resolve, 1000),
+                        );
+
+                        // Simulate API response
+                        const mockUser = {
+                          id: Math.floor(Math.random() * 1000),
+                          name: ['Alice', 'Bob', 'Charlie', 'Diana'][
+                            Math.floor(Math.random() * 4)
+                          ],
+                        };
+                        setDemoUser(mockUser);
+                      } catch (err) {
+                        setDemoError('Failed to load user');
+                      } finally {
+                        setDemoLoading(false);
+                      }
+                    }}
+                    className={cn(
+                      'mt-2 rounded-md px-4 py-2',
+                      interactiveClasses.base,
+                    )}
+                    disabled={demoLoading}
+                  >
+                    {demoLoading ? 'Loading...' : 'Load Random User'}
+                  </button>
+                </div>
+
+                <div className="mt-4">
+                  {demoLoading && (
+                    <div className="text-sm text-blue-600">
+                      Loading user data...
+                    </div>
+                  )}
+                  {demoError && (
+                    <div className="text-sm text-red-600">
+                      Error: {demoError}
+                    </div>
+                  )}
+                  {demoUser && !demoLoading && (
+                    <div className="rounded-md bg-green-50 p-3">
+                      <p className="text-sm text-green-800">
+                        Welcome, {demoUser.name}! (ID: {demoUser.id})
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-2">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    This demo simulates an async API call with loading states,
+                    error handling, and success states. Click the button
+                    multiple times to see different users loaded!
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         );
 
@@ -922,9 +1225,29 @@ function ParentComponent() {
     );
   }
 
+  // Add difficulty badge component
+  function DifficultyBadge({ level }: { level: DifficultyLevel }) {
+    const colors = {
+      beginner: 'bg-green-100 text-green-800 dark:bg-green-900/20',
+      intermediate: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20',
+      advanced: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20',
+    };
+
+    return (
+      <span
+        className={cn(
+          'rounded-full px-2 py-1 text-xs font-medium',
+          colors[level],
+        )}
+      >
+        {level.charAt(0).toUpperCase() + level.slice(1)}
+      </span>
+    );
+  }
+
   return (
     <div className="min-h-0 w-full flex-1 overflow-y-auto">
-      <div className="container mx-auto space-y-6 px-4 py-6 md:space-y-8 md:px-6 lg:px-8">
+      <div className="container mx-auto space-y-8 px-4 py-6 md:px-6 lg:px-8">
         {/* Header Section */}
         <div className="prose dark:prose-invert max-w-none">
           <h2
@@ -936,164 +1259,188 @@ function ParentComponent() {
             React Fundamentals
           </h2>
           <p className={cn('text-sm md:text-base', textClasses.secondary)}>
-            Let's learn React by doing! Each example below includes an
-            explanation, code snippet, and a live demo you can play with. Don't
-            worry if it seems complex at first - we'll break everything down
-            into simple pieces.
+            Start your React journey with beginner-friendly examples and
+            progress to advanced concepts. Each section is tailored to your
+            experience level, so you can learn at your own pace.
           </p>
         </div>
 
-        {/* Examples Grid - Responsive for all screen sizes */}
-        <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2">
-          {examples.map((example, index) => (
-            <motion.div
-              key={example.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className={cn(
-                cardClasses.base,
-                'relative overflow-hidden p-4 md:p-6',
-                example.completed &&
-                  'border-green-500 bg-green-50 dark:bg-green-900/20',
-              )}
-            >
-              <div className="flex flex-col space-y-4">
-                {/* Header with Complete Button */}
-                <div className="flex items-start justify-between">
-                  <div className="space-y-2">
-                    <h3
-                      className={cn(
-                        'text-base font-semibold md:text-lg',
-                        textClasses.primary,
-                      )}
-                    >
-                      {example.title}
-                    </h3>
-                    <p className={cn('text-sm', textClasses.secondary)}>
-                      {example.description}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleExampleComplete(index)}
-                    className={cn(
-                      'ml-2 flex-shrink-0 rounded-full p-1',
-                      example.completed
-                        ? 'text-green-500'
-                        : 'text-gray-400 hover:text-gray-500',
-                    )}
-                    aria-label={
-                      example.completed
-                        ? 'Mark as incomplete'
-                        : 'Mark as complete'
-                    }
-                  >
-                    <CheckCircleIcon className="h-6 w-6" />
-                  </button>
-                </div>
-
-                {/* Code Example */}
-                <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800 md:p-4">
-                  <pre className="scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 overflow-x-auto text-sm">
-                    <code className="block whitespace-pre-wrap break-words">
-                      {example.code}
-                    </code>
-                  </pre>
-                </div>
-
-                {/* Explanation */}
-                <div className="rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20 md:p-4">
-                  <p className={cn('text-sm', textClasses.secondary)}>
-                    <span className="font-semibold">💡 Understanding: </span>
-                    {example.explanation}
-                  </p>
-                </div>
-
-                {/* When to Use */}
-                <div className="space-y-3">
-                  <h4
-                    className={cn('text-sm font-semibold', textClasses.primary)}
-                  >
-                    When to Use:
-                  </h4>
-                  <ul className="list-disc space-y-1 pl-5">
-                    {example.whenToUse.map((use, i) => (
-                      <li
-                        key={i}
-                        className={cn('text-sm', textClasses.secondary)}
-                      >
-                        {use}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Real World Examples */}
-                <div className="space-y-3">
-                  <h4
-                    className={cn('text-sm font-semibold', textClasses.primary)}
-                  >
-                    Real World Examples:
-                  </h4>
-                  <ul className="list-disc space-y-1 pl-5">
-                    {example.realWorldUses.map((use, i) => (
-                      <li
-                        key={i}
-                        className={cn('text-sm', textClasses.secondary)}
-                      >
-                        {use}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Live Demo */}
-                {renderDemo(example.id) && (
-                  <div className="rounded-lg border border-gray-200 p-3 dark:border-gray-700 md:p-4">
-                    <h4
-                      className={cn(
-                        'mb-3 text-sm font-semibold md:mb-4',
-                        textClasses.primary,
-                      )}
-                    >
-                      Live Demo:
-                    </h4>
-                    <div className="overflow-x-auto">
-                      {renderDemo(example.id)}
-                    </div>
-                  </div>
+        {/* Render each difficulty section */}
+        {(['beginner', 'intermediate', 'advanced'] as const).map(
+          (difficulty) => (
+            <div key={difficulty} className="space-y-6">
+              <h3
+                className={cn(
+                  'text-lg font-semibold md:text-xl',
+                  textClasses.primary,
                 )}
-              </div>
-            </motion.div>
-          ))}
-        </div>
+              >
+                {difficulty === 'beginner' && '🌱 '}
+                {difficulty === 'intermediate' && '�� '}
+                {difficulty === 'advanced' && '⚡ '}
+                {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}{' '}
+                Concepts
+              </h3>
 
-        {/* Next Steps Section */}
-        <div className="prose dark:prose-invert max-w-none">
-          <div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
-            <h3 className={cn('text-lg font-semibold', textClasses.primary)}>
-              🎯 Next Steps
-            </h3>
-            <p className={cn('mt-2 text-sm', textClasses.secondary)}>
-              Now that you understand the basics of React, you can:
-            </p>
-            <ul
-              className={cn(
-                'mt-4 list-disc space-y-2 pl-5 text-sm',
-                textClasses.secondary,
-              )}
-            >
-              <li>Build your own components using useState and useEffect</li>
-              <li>Create reusable components and share them across your app</li>
-              <li>
-                Manage complex state with Context or other state management
-                tools
-              </li>
-              <li>Create custom hooks to share logic between components</li>
-              <li>Explore more advanced React features and patterns</li>
-            </ul>
-          </div>
-        </div>
+              <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2">
+                {examples
+                  .filter((example) => example.difficulty === difficulty)
+                  .map((example, index) => (
+                    <motion.div
+                      key={example.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className={cn(
+                        cardClasses.base,
+                        'relative overflow-hidden p-6',
+                        example.completed &&
+                          'border-green-500 bg-green-50 dark:bg-green-900/20',
+                      )}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <h3
+                                className={cn(
+                                  'text-lg font-semibold',
+                                  textClasses.primary,
+                                )}
+                              >
+                                {example.title}
+                              </h3>
+                              <DifficultyBadge level={example.difficulty} />
+                            </div>
+                            <p className={cn('text-sm', textClasses.secondary)}>
+                              {example.description}
+                            </p>
+                          </div>
+
+                          <div>
+                            <h4
+                              className={cn(
+                                'mb-2 text-sm font-semibold',
+                                textClasses.primary,
+                              )}
+                            >
+                              Code Example
+                            </h4>
+                            <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800 md:p-4">
+                              <pre className="scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 overflow-x-auto text-sm">
+                                <code className="block whitespace-pre-wrap break-words">
+                                  {example.code}
+                                </code>
+                              </pre>
+                            </div>
+                          </div>
+
+                          <div>
+                            <h4
+                              className={cn(
+                                'mb-2 text-sm font-semibold',
+                                textClasses.primary,
+                              )}
+                            >
+                              Understanding
+                            </h4>
+                            <div className="rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20 md:p-4">
+                              <p
+                                className={cn('text-sm', textClasses.secondary)}
+                              >
+                                {example.explanation}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div>
+                            <h4
+                              className={cn(
+                                'mb-2 text-sm font-semibold',
+                                textClasses.primary,
+                              )}
+                            >
+                              When to Use
+                            </h4>
+                            <ul className="list-inside list-disc space-y-1">
+                              {example.whenToUse.map((use, i) => (
+                                <li
+                                  key={i}
+                                  className={cn(
+                                    'text-sm',
+                                    textClasses.secondary,
+                                  )}
+                                >
+                                  {use}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          <div>
+                            <h4
+                              className={cn(
+                                'mb-2 text-sm font-semibold',
+                                textClasses.primary,
+                              )}
+                            >
+                              Real World Examples
+                            </h4>
+                            <ul className="list-inside list-disc space-y-1">
+                              {example.realWorldUses.map((use, i) => (
+                                <li
+                                  key={i}
+                                  className={cn(
+                                    'text-sm',
+                                    textClasses.secondary,
+                                  )}
+                                >
+                                  {use}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          {renderDemo(example.id) && (
+                            <div>
+                              <h4
+                                className={cn(
+                                  'mb-2 text-sm font-semibold',
+                                  textClasses.primary,
+                                )}
+                              >
+                                Live Demo
+                              </h4>
+                              <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                                {renderDemo(example.id)}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => handleExampleComplete(index)}
+                          className={cn(
+                            'rounded-full p-1',
+                            example.completed
+                              ? 'text-green-500 hover:text-green-600'
+                              : 'text-gray-400 hover:text-gray-500',
+                          )}
+                          aria-label={
+                            example.completed
+                              ? 'Mark as incomplete'
+                              : 'Mark as complete'
+                          }
+                        >
+                          <CheckCircleIcon className="h-6 w-6" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
+              </div>
+            </div>
+          ),
+        )}
       </div>
     </div>
   );
