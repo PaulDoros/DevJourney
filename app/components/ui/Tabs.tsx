@@ -1,28 +1,51 @@
 import * as TabsPrimitive from '@radix-ui/react-tabs';
 import { cn } from '~/lib/utils';
+import { forwardRef } from 'react';
+import { tabClasses } from '~/utils/theme-classes';
 
-export const Tabs = TabsPrimitive.Root;
-export const TabsList = TabsPrimitive.List;
-export const TabsTrigger = TabsPrimitive.Trigger;
-export const TabsContent = TabsPrimitive.Content;
+const Tabs = TabsPrimitive.Root;
 
-// Add styling
-TabsList.defaultProps = {
-  className: 'flex gap-2 border-b border-gray-200 dark:border-gray-700',
-};
+const TabsList = forwardRef<
+  React.ElementRef<typeof TabsPrimitive.List>,
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
+>(({ className, ...props }, ref) => (
+  <TabsPrimitive.List
+    ref={ref}
+    className={cn(
+      'inline-flex h-10 items-center justify-center rounded-md p-1',
+      tabClasses.list,
+      className,
+    )}
+    {...props}
+  />
+));
+TabsList.displayName = TabsPrimitive.List.displayName;
 
-TabsTrigger.defaultProps = {
-  className: cn(
-    'px-4 py-2 text-sm font-medium',
-    'text-light-text/70 hover:text-light-text',
-    'retro:text-retro-text/70 retro:hover:text-retro-text',
-    'multi:text-white/70 multi:hover:text-white',
-    'dark:text-dark-text/70 dark:hover:text-dark-text',
-    'border-b-2 border-transparent',
-    'data-[state=active]:border-light-accent',
-    'data-[state=active]:text-light-text',
-    'retro:data-[state=active]:border-retro-accent',
-    'multi:data-[state=active]:border-multi-accent',
-    'dark:data-[state=active]:border-dark-accent',
-  ),
-};
+const TabsTrigger = forwardRef<
+  React.ElementRef<typeof TabsPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
+>(({ className, ...props }, ref) => (
+  <TabsPrimitive.Trigger
+    ref={ref}
+    className={cn(tabClasses.tab.base, className)}
+    {...props}
+  />
+));
+TabsTrigger.displayName = TabsPrimitive.Trigger.displayName;
+
+const TabsContent = forwardRef<
+  React.ElementRef<typeof TabsPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
+>(({ className, ...props }, ref) => (
+  <TabsPrimitive.Content
+    ref={ref}
+    className={cn(
+      'mt-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-light-accent retro:focus-visible:ring-retro-accent multi:focus-visible:ring-multi-accent dark:focus-visible:ring-dark-accent',
+      className,
+    )}
+    {...props}
+  />
+));
+TabsContent.displayName = TabsPrimitive.Content.displayName;
+
+export { Tabs, TabsList, TabsTrigger, TabsContent };

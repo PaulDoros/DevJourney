@@ -9,6 +9,7 @@ import {
   useLocation,
   useLoaderData,
   LiveReload,
+  useNavigation,
 } from '@remix-run/react';
 import { json } from '@remix-run/node';
 import type { LinksFunction, LoaderFunctionArgs } from '@remix-run/node';
@@ -124,8 +125,9 @@ export default function App() {
   const { userAchievements } = useLoaderData<typeof loader>();
 
   useAchievementListener(userAchievements);
+
   return (
-    <Suspense fallback={<DefaultErrorFallback />}>
+    <Suspense fallback={null}>
       <AnimatePresence mode="wait" initial={false}>
         <PageTransition key={location.pathname}>
           <Outlet />
@@ -136,5 +138,51 @@ export default function App() {
 }
 
 export function ErrorBoundary() {
-  return <DefaultErrorFallback />;
+  const error = useRouteError();
+  const location = useLocation();
+  const navigation = useNavigation();
+
+  // Don't show error page for navigation loading states
+  if (navigation.state === 'loading') {
+    return null;
+  }
+
+  // Handle route errors differently
+  if (isRouteErrorResponse(error)) {
+    return (
+      <html lang="en">
+        <head>
+          <meta charSet="utf-8" />
+          <meta name="viewport" content="width=device-width,initial-scale=1" />
+          <Meta />
+          <Links />
+        </head>
+        <body>
+          <DefaultErrorFallback error={error} />
+          <Scripts />
+          <ScrollRestoration />
+        </body>
+      </html>
+    );
+  }
+
+  // For other errors, show a generic error page
+  return (
+    <html lang="en">
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <Meta />
+        <Links />
+      </head>
+      <body>
+        <DefaultErrorFallback
+          error={error as Error}
+          message="An unexpected error occurred"
+        />
+        <Scripts />
+        <ScrollRestoration />
+      </body>
+    </html>
+  );
 }

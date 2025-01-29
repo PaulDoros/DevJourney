@@ -5,7 +5,8 @@ export type AchievementCategory =
   | 'avatar-collection'
   | 'community-engagement'
   | 'advanced-skills'
-  | 'testing';
+  | 'testing'
+  | 'getting-started-beginner';
 
 export interface Achievement {
   id: string;

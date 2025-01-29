@@ -77,6 +77,10 @@ export function ScreenSizeIndicator() {
   return (
     <motion.div
       className="fixed z-50 flex gap-2"
+      initial={{
+        bottom: '1rem',
+        right: '1rem',
+      }}
       animate={{
         bottom: '1rem',
         left: position === 'left' ? '1rem' : 'auto',
@@ -94,7 +98,11 @@ export function ScreenSizeIndicator() {
           'flex cursor-pointer items-center gap-3 overflow-hidden rounded-lg',
           position === 'right' ? 'flex-row-reverse' : 'flex-row',
         )}
-        initial={false}
+        initial={{
+          backgroundColor: 'transparent',
+          width: '28px',
+          padding: '0.5rem',
+        }}
         animate={{
           backgroundColor: isExpanded ? 'rgba(0, 0, 0, 0.7)' : 'transparent',
           width: isExpanded ? 'auto' : '28px',

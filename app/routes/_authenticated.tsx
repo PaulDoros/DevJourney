@@ -1,10 +1,10 @@
 import { Sidebar, SidebarBody, SidebarLink } from '~/components/ui/Sidebar';
-import { navigationLinks } from '~/components/Navigation/NavigationLinks';
+import { NavigationLinksList } from '~/components/Navigation/NavigationLinks';
 import { Logo, LogoIcon } from '~/components/Logo';
 import { UserAvatar } from '~/components/UserAvatar';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { cn } from '~/lib/utils';
-import { Outlet, useLoaderData } from '@remix-run/react';
+import { Outlet, useLoaderData, useNavigation } from '@remix-run/react';
 import { redirect, type LoaderFunctionArgs, json } from '@remix-run/node';
 import { requireUser } from '~/utils/session.server';
 import {
@@ -13,41 +13,76 @@ import {
   getAchievementByName,
 } from '~/services/achievements.server';
 import { FirstAchievementModal } from '~/components/Achievements/FirstAchievementModal';
+import type { UserAchievement } from '~/types/achievements';
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const user = await requireUser(request);
+  try {
+    const user = await requireUser(request);
 
-  // Get user achievements
-  const achievements = await getUserAchievements(request, user.id);
+    // Get user achievements
+    const achievements: UserAchievement[] = await getUserAchievements(
+      request,
+      user.id,
+    ).catch(() => []);
 
-  // Check if this is first login and user doesn't have the welcome achievement
-  const hasWelcomeAchievement = achievements.some(
-    (ua) => ua.achievement?.name === 'Welcome!',
-  );
+    // Check if this is first login and user doesn't have the welcome achievement
+    const hasWelcomeAchievement = achievements.some(
+      (ua) => ua.achievement?.name === 'Welcome!',
+    );
 
-  if (!hasWelcomeAchievement) {
-    // Get the welcome achievement first
-    const welcomeAchievement = await getAchievementByName(request, 'Welcome!');
-    if (welcomeAchievement) {
-      // Now unlock it with the correct UUID
-      const unlockedAchievement = await unlockAchievement(
-        request,
-        user.id,
-        welcomeAchievement.id,
-      );
-      achievements.push(unlockedAchievement);
+    if (!hasWelcomeAchievement) {
+      try {
+        // Get the welcome achievement first
+        const welcomeAchievement = await getAchievementByName(
+          request,
+          'Welcome!',
+        );
+        if (welcomeAchievement) {
+          // Now unlock it with the correct UUID
+          const unlockedAchievement = await unlockAchievement(
+            request,
+            user.id,
+            welcomeAchievement.id,
+          );
+          if (unlockedAchievement.success && unlockedAchievement.achievement) {
+            achievements.push(
+              unlockedAchievement.achievement as UserAchievement,
+            );
+          }
+        }
+      } catch (error: unknown) {
+        // Silently handle welcome achievement error - non-critical
+        console.error('Error unlocking welcome achievement:', error);
+      }
     }
-  }
 
-  return json({
-    user,
-    achievements,
-    isFirstLogin: !hasWelcomeAchievement,
-  });
+    return json({
+      user,
+      achievements,
+      isFirstLogin: !hasWelcomeAchievement,
+    });
+  } catch (error: unknown) {
+    if (error instanceof Response) throw error;
+    console.error('Authenticated layout error:', error);
+    throw new Response('Error loading authenticated layout', { status: 500 });
+  }
+}
+
+// Loading component for authenticated layout
+function AuthenticatedLayoutLoading() {
+  return (
+    <div className="bg-background flex h-screen w-full items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <LogoIcon className="h-12 w-12 animate-pulse" />
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    </div>
+  );
 }
 
 export default function AuthenticatedLayout() {
-  const { user, isFirstLogin } = useLoaderData<typeof loader>();
+  const navigation = useNavigation();
+  const { user, achievements, isFirstLogin } = useLoaderData<typeof loader>();
   const [open, setOpen] = useState(false);
   const [showFirstAchievementModal, setShowFirstAchievementModal] =
     useState(false);
@@ -57,6 +92,11 @@ export default function AuthenticatedLayout() {
       setShowFirstAchievementModal(true);
     }
   }, [isFirstLogin]);
+
+  // Only show loading during actual navigation, not during initial load
+  if (navigation.state === 'loading' && navigation.location) {
+    return <AuthenticatedLayoutLoading />;
+  }
 
   return (
     <div
@@ -73,10 +113,8 @@ export default function AuthenticatedLayout() {
         <SidebarBody className="justify-between gap-10">
           <div className="flex flex-1 flex-col">
             {open ? <Logo /> : <LogoIcon />}
-            <div className="mt-8 flex flex-col gap-2">
-              {navigationLinks.map((link) => (
-                <SidebarLink key={link.href} link={link} />
-              ))}
+            <div className="mt-8">
+              <NavigationLinksList />
             </div>
           </div>
           <div>

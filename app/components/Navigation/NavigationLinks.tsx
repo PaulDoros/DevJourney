@@ -5,6 +5,8 @@ import {
   LogOut,
   Trophy,
 } from 'lucide-react';
+import { LearningNavigation } from './LearningNavigation';
+import { SidebarLink } from '~/components/ui/Sidebar';
 
 export const navigationLinks = [
   {
@@ -42,3 +44,15 @@ export const navigationLinks = [
     isForm: true,
   },
 ];
+
+export function NavigationLinksList() {
+  return (
+    <div className="flex flex-col gap-2">
+      <LearningNavigation />
+      <div className="my-2 h-px bg-gray-200 dark:bg-gray-700" />
+      {navigationLinks.map((link) => (
+        <SidebarLink key={link.href} link={link} />
+      ))}
+    </div>
+  );
+}
