@@ -132,11 +132,17 @@ export default function App() {
   useAchievementListener(userAchievements);
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <PageTransition key={location.pathname}>
-        <Outlet />
-      </PageTransition>
-    </AnimatePresence>
+    <div className="relative isolate">
+      <AnimatePresence
+        mode="wait"
+        initial={false}
+        onExitComplete={() => window.scrollTo(0, 0)}
+      >
+        <PageTransition key={location.key || location.pathname}>
+          <Outlet />
+        </PageTransition>
+      </AnimatePresence>
+    </div>
   );
 }
 
