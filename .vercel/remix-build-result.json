@@ -11,13 +11,25 @@
     },
     "routeIdToServerBundleId": {
       "root": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/_authenticated.learn.getting-started": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/_authenticated.learn.components": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/_authenticated.learn.tech-stack": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/_authenticated.learn.supabase": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/_authenticated.learn.tailwind": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/_authenticated.achievements": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/_authenticated.learn.react": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/_authenticated.learn.remix": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/actions.learning-progress": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/_authenticated.components": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/_authenticated.playground": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/_authenticated.settings": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/_authenticated.profile": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/api.track-achievement": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/_authenticated._index": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/_authenticated.learn": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/api.validate-code": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/actions.settings": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/api.achievements": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/auth.callback": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/api.theme": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/api.like": "nodejs-eyJydW50aW1lIjoibm9kZWpzIn0",
@@ -34,10 +46,80 @@
           "runtime": "nodejs"
         }
       },
+      "routes/_authenticated.learn.getting-started": {
+        "file": "app/routes/_authenticated.learn.getting-started.tsx",
+        "id": "routes/_authenticated.learn.getting-started",
+        "path": "getting-started",
+        "parentId": "routes/_authenticated.learn",
+        "config": {}
+      },
+      "routes/_authenticated.learn.components": {
+        "file": "app/routes/_authenticated.learn.components.tsx",
+        "id": "routes/_authenticated.learn.components",
+        "path": "components",
+        "parentId": "routes/_authenticated.learn",
+        "config": {}
+      },
+      "routes/_authenticated.learn.tech-stack": {
+        "file": "app/routes/_authenticated.learn.tech-stack.tsx",
+        "id": "routes/_authenticated.learn.tech-stack",
+        "path": "tech-stack",
+        "parentId": "routes/_authenticated.learn",
+        "config": {}
+      },
+      "routes/_authenticated.learn.supabase": {
+        "file": "app/routes/_authenticated.learn.supabase.tsx",
+        "id": "routes/_authenticated.learn.supabase",
+        "path": "supabase",
+        "parentId": "routes/_authenticated.learn",
+        "config": {}
+      },
+      "routes/_authenticated.learn.tailwind": {
+        "file": "app/routes/_authenticated.learn.tailwind.tsx",
+        "id": "routes/_authenticated.learn.tailwind",
+        "path": "tailwind",
+        "parentId": "routes/_authenticated.learn",
+        "config": {}
+      },
       "routes/_authenticated.achievements": {
         "file": "app/routes/_authenticated.achievements.tsx",
         "id": "routes/_authenticated.achievements",
         "path": "achievements",
+        "parentId": "routes/_authenticated",
+        "config": {}
+      },
+      "routes/_authenticated.learn.react": {
+        "file": "app/routes/_authenticated.learn.react.tsx",
+        "id": "routes/_authenticated.learn.react",
+        "path": "react",
+        "parentId": "routes/_authenticated.learn",
+        "config": {}
+      },
+      "routes/_authenticated.learn.remix": {
+        "file": "app/routes/_authenticated.learn.remix.tsx",
+        "id": "routes/_authenticated.learn.remix",
+        "path": "remix",
+        "parentId": "routes/_authenticated.learn",
+        "config": {}
+      },
+      "routes/actions.learning-progress": {
+        "file": "app/routes/actions.learning-progress.tsx",
+        "id": "routes/actions.learning-progress",
+        "path": "actions/learning-progress",
+        "parentId": "root",
+        "config": {}
+      },
+      "routes/_authenticated.components": {
+        "file": "app/routes/_authenticated.components.tsx",
+        "id": "routes/_authenticated.components",
+        "path": "components",
+        "parentId": "routes/_authenticated",
+        "config": {}
+      },
+      "routes/_authenticated.playground": {
+        "file": "app/routes/_authenticated.playground.tsx",
+        "id": "routes/_authenticated.playground",
+        "path": "playground",
         "parentId": "routes/_authenticated",
         "config": {}
       },
@@ -69,6 +151,13 @@
         "parentId": "routes/_authenticated",
         "config": {}
       },
+      "routes/_authenticated.learn": {
+        "file": "app/routes/_authenticated.learn.tsx",
+        "id": "routes/_authenticated.learn",
+        "path": "learn",
+        "parentId": "routes/_authenticated",
+        "config": {}
+      },
       "routes/api.validate-code": {
         "file": "app/routes/api.validate-code.tsx",
         "id": "routes/api.validate-code",
@@ -80,6 +169,13 @@
         "file": "app/routes/actions.settings.tsx",
         "id": "routes/actions.settings",
         "path": "actions/settings",
+        "parentId": "root",
+        "config": {}
+      },
+      "routes/api.achievements": {
+        "file": "app/routes/api.achievements.tsx",
+        "id": "routes/api.achievements",
+        "path": "api/achievements",
         "parentId": "root",
         "config": {}
       },
@@ -154,10 +250,70 @@
         "id": "root",
         "file": "root.tsx"
       },
+      "routes/_authenticated.learn.getting-started": {
+        "file": "routes/_authenticated.learn.getting-started.tsx",
+        "id": "routes/_authenticated.learn.getting-started",
+        "path": "getting-started",
+        "parentId": "routes/_authenticated.learn"
+      },
+      "routes/_authenticated.learn.components": {
+        "file": "routes/_authenticated.learn.components.tsx",
+        "id": "routes/_authenticated.learn.components",
+        "path": "components",
+        "parentId": "routes/_authenticated.learn"
+      },
+      "routes/_authenticated.learn.tech-stack": {
+        "file": "routes/_authenticated.learn.tech-stack.tsx",
+        "id": "routes/_authenticated.learn.tech-stack",
+        "path": "tech-stack",
+        "parentId": "routes/_authenticated.learn"
+      },
+      "routes/_authenticated.learn.supabase": {
+        "file": "routes/_authenticated.learn.supabase.tsx",
+        "id": "routes/_authenticated.learn.supabase",
+        "path": "supabase",
+        "parentId": "routes/_authenticated.learn"
+      },
+      "routes/_authenticated.learn.tailwind": {
+        "file": "routes/_authenticated.learn.tailwind.tsx",
+        "id": "routes/_authenticated.learn.tailwind",
+        "path": "tailwind",
+        "parentId": "routes/_authenticated.learn"
+      },
       "routes/_authenticated.achievements": {
         "file": "routes/_authenticated.achievements.tsx",
         "id": "routes/_authenticated.achievements",
         "path": "achievements",
+        "parentId": "routes/_authenticated"
+      },
+      "routes/_authenticated.learn.react": {
+        "file": "routes/_authenticated.learn.react.tsx",
+        "id": "routes/_authenticated.learn.react",
+        "path": "react",
+        "parentId": "routes/_authenticated.learn"
+      },
+      "routes/_authenticated.learn.remix": {
+        "file": "routes/_authenticated.learn.remix.tsx",
+        "id": "routes/_authenticated.learn.remix",
+        "path": "remix",
+        "parentId": "routes/_authenticated.learn"
+      },
+      "routes/actions.learning-progress": {
+        "file": "routes/actions.learning-progress.tsx",
+        "id": "routes/actions.learning-progress",
+        "path": "actions/learning-progress",
+        "parentId": "root"
+      },
+      "routes/_authenticated.components": {
+        "file": "routes/_authenticated.components.tsx",
+        "id": "routes/_authenticated.components",
+        "path": "components",
+        "parentId": "routes/_authenticated"
+      },
+      "routes/_authenticated.playground": {
+        "file": "routes/_authenticated.playground.tsx",
+        "id": "routes/_authenticated.playground",
+        "path": "playground",
         "parentId": "routes/_authenticated"
       },
       "routes/_authenticated.settings": {
@@ -184,6 +340,12 @@
         "index": true,
         "parentId": "routes/_authenticated"
       },
+      "routes/_authenticated.learn": {
+        "file": "routes/_authenticated.learn.tsx",
+        "id": "routes/_authenticated.learn",
+        "path": "learn",
+        "parentId": "routes/_authenticated"
+      },
       "routes/api.validate-code": {
         "file": "routes/api.validate-code.tsx",
         "id": "routes/api.validate-code",
@@ -194,6 +356,12 @@
         "file": "routes/actions.settings.tsx",
         "id": "routes/actions.settings",
         "path": "actions/settings",
+        "parentId": "root"
+      },
+      "routes/api.achievements": {
+        "file": "routes/api.achievements.tsx",
+        "id": "routes/api.achievements",
+        "path": "api/achievements",
         "parentId": "root"
       },
       "routes/_authenticated": {

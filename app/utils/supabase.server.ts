@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { createServerClient } from '@supabase/auth-helpers-remix';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import type { Database } from '~/types/supabase';
 
 if (!process.env.SUPABASE_URL) throw new Error('Missing SUPABASE_URL');
@@ -12,25 +12,36 @@ export const supabase = createClient<Database>(
 );
 
 export function createServerSupabase(request: Request) {
-  const response = new Response();
+  const cookies = request.headers.get('Cookie') ?? '';
 
-  const supabaseClient = createServerClient(
+  return createServerClient(
     process.env.SUPABASE_URL!,
     process.env.SUPABASE_ANON_KEY!,
-    { request, response },
+    {
+      cookies: {
+        get(name: string) {
+          const cookie = cookies
+            .split(';')
+            .find((c) => c.trim().startsWith(`${name}=`));
+          if (!cookie) return null;
+          return decodeURIComponent(cookie.split('=')[1]);
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          // This is handled by the Set-Cookie header in the response
+        },
+        remove(name: string, options: CookieOptions) {
+          // This is handled by the Set-Cookie header in the response
+        },
+      },
+    },
   );
-
-  return {
-    supabase: supabaseClient,
-    response,
-  };
 }
 
 export async function getSession(request: Request) {
-  const { supabase } = createServerSupabase(request);
+  const supabaseClient = createServerSupabase(request);
   const {
     data: { session },
-  } = await supabase.auth.getSession();
+  } = await supabaseClient.auth.getSession();
   return session;
 }
 
