@@ -1,68 +1,115 @@
 import { createClient } from '@supabase/supabase-js';
-import { getEnvVars } from './env.server';
+import { createServerClient } from '@supabase/auth-helpers-remix';
+import type { Database } from '~/types/supabase';
 
-const env = getEnvVars();
+if (!process.env.SUPABASE_URL) throw new Error('Missing SUPABASE_URL');
+if (!process.env.SUPABASE_ANON_KEY)
+  throw new Error('Missing SUPABASE_ANON_KEY');
 
-if (!env.SUPABASE_URL) throw new Error('SUPABASE_URL is required');
-if (!env.SUPABASE_ANON_KEY) throw new Error('SUPABASE_ANON_KEY is required');
+export const supabase = createClient<Database>(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY,
+);
 
-// Create a single supabase client for interacting with your database
-export const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-    detectSessionInUrl: false,
-  },
-  db: {
-    schema: 'public',
-  },
-  global: {
-    headers: {
-      'x-application-name': 'dev-journey',
-    },
-  },
-});
+export function createServerSupabase(request: Request) {
+  const response = new Response();
 
-// Helper function to check if a user exists
-export async function checkUserExists(userId: string) {
-  const { data, error } = await supabase
-    .from('users')
-    .select('id')
-    .eq('id', userId)
-    .single();
+  const supabaseClient = createServerClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_ANON_KEY!,
+    { request, response },
+  );
 
-  if (error) {
-    console.error('Error checking user:', error);
-    return false;
-  }
-
-  return !!data;
+  return {
+    supabase: supabaseClient,
+    response,
+  };
 }
 
-// Helper function to create a new user record
-export async function createUserRecord(userData: {
-  id: string;
-  username: string;
-  email: string;
-  isGuest: boolean;
-}) {
-  const { data, error } = await supabase
+export async function getSession(request: Request) {
+  const { supabase } = createServerSupabase(request);
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  return session;
+}
+
+export async function requireAuth(request: Request) {
+  const session = await getSession(request);
+  if (!session) {
+    throw new Response('Unauthorized', { status: 401 });
+  }
+  return session;
+}
+
+export async function getUserByEmail(email: string) {
+  const { data: user, error } = await supabase
     .from('users')
-    .insert([
-      {
-        ...userData,
-        points: 0,
-        achievements: [],
-        created_at: new Date().toISOString(),
-      },
-    ])
+    .select('*')
+    .eq('email', email)
+    .single();
+
+  if (error) throw error;
+  return user;
+}
+
+export async function createUser(userData: {
+  email: string;
+  name: string;
+  avatar_url?: string;
+}) {
+  const { data: user, error } = await supabase
+    .from('users')
+    .insert([userData])
     .select()
     .single();
 
-  if (error) {
-    console.error('Error creating user:', error);
-    throw error;
-  }
-
-  return data;
+  if (error) throw error;
+  return user;
 }
+
+export async function updateUser(
+  userId: string,
+  updates: Partial<{
+    name: string;
+    avatar_url: string;
+    email: string;
+  }>,
+) {
+  const { data: user, error } = await supabase
+    .from('users')
+    .update(updates)
+    .eq('id', userId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return user;
+}
+
+export async function deleteUser(userId: string) {
+  const { error } = await supabase.from('users').delete().eq('id', userId);
+  if (error) throw error;
+}
+
+// Real-time subscription helpers
+export function subscribeToTable(
+  tableName: string,
+  callback: (payload: any) => void,
+) {
+  return supabase
+    .channel(`public:${tableName}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: tableName },
+      callback,
+    )
+    .subscribe();
+}
+
+// Database schema type helper
+export type Tables<T extends keyof Database['public']['Tables']> =
+  Database['public']['Tables'][T]['Row'];
+
+export type Enums<T extends keyof Database['public']['Enums']> =
+  Database['public']['Enums'][T];

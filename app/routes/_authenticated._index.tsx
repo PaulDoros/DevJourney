@@ -102,12 +102,12 @@ export default function Index() {
           </div> */}
         {/* </section> */}
 
-        {/* Interactive Components Section */}
-        <section className="space-y-4">
+        {/* Learning Paths Section */}
+        <section className="mb-12 space-y-4">
           <h2 className={cn('text-xl font-semibold', textClasses.primary)}>
-            Start Learning
+            Learning Paths
           </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Link
               to="/learn/getting-started"
               className={cn('group', cardClasses.interactive)}
@@ -119,11 +119,10 @@ export default function Index() {
                   'group-hover:text-light-accent retro:group-hover:text-retro-accent multi:group-hover:text-multi-accent dark:group-hover:text-dark-accent',
                 )}
               >
-                Learning Path →
+                Getting Started →
               </h3>
               <p className={textClasses.secondary}>
-                Start your journey by learning about our tech stack, tools, and
-                best practices.
+                Setup your development environment and learn the basics.
               </p>
             </Link>
             <Link
@@ -141,6 +140,148 @@ export default function Index() {
               </h3>
               <p className={textClasses.secondary}>
                 Explore the technologies we use and why we chose them.
+              </p>
+            </Link>
+            <Link
+              to="/learn/react"
+              className={cn('group', cardClasses.interactive)}
+            >
+              <h3
+                className={cn(
+                  'mb-2 text-lg font-semibold',
+                  textClasses.primary,
+                  'group-hover:text-light-accent retro:group-hover:text-retro-accent multi:group-hover:text-multi-accent dark:group-hover:text-dark-accent',
+                )}
+              >
+                React →
+              </h3>
+              <p className={textClasses.secondary}>
+                Learn React fundamentals and best practices.
+              </p>
+            </Link>
+            <Link
+              to="/learn/remix"
+              className={cn('group', cardClasses.interactive)}
+            >
+              <h3
+                className={cn(
+                  'mb-2 text-lg font-semibold',
+                  textClasses.primary,
+                  'group-hover:text-light-accent retro:group-hover:text-retro-accent multi:group-hover:text-multi-accent dark:group-hover:text-dark-accent',
+                )}
+              >
+                Remix →
+              </h3>
+              <p className={textClasses.secondary}>
+                Master Remix and server-side rendering.
+              </p>
+            </Link>
+            <Link
+              to="/learn/tailwind"
+              className={cn('group', cardClasses.interactive)}
+            >
+              <h3
+                className={cn(
+                  'mb-2 text-lg font-semibold',
+                  textClasses.primary,
+                  'group-hover:text-light-accent retro:group-hover:text-retro-accent multi:group-hover:text-multi-accent dark:group-hover:text-dark-accent',
+                )}
+              >
+                Tailwind CSS →
+              </h3>
+              <p className={textClasses.secondary}>
+                Master utility-first CSS with Tailwind.
+              </p>
+            </Link>
+            <Link
+              to="/learn/supabase"
+              className={cn('group', cardClasses.interactive)}
+            >
+              <h3
+                className={cn(
+                  'mb-2 text-lg font-semibold',
+                  textClasses.primary,
+                  'group-hover:text-light-accent retro:group-hover:text-retro-accent multi:group-hover:text-multi-accent dark:group-hover:text-dark-accent',
+                )}
+              >
+                Supabase →
+              </h3>
+              <p className={textClasses.secondary}>
+                Explore backend capabilities with Supabase.
+              </p>
+            </Link>
+            <Link
+              to="/learn/components"
+              className={cn('group', cardClasses.interactive)}
+            >
+              <h3
+                className={cn(
+                  'mb-2 text-lg font-semibold',
+                  textClasses.primary,
+                  'group-hover:text-light-accent retro:group-hover:text-retro-accent multi:group-hover:text-multi-accent dark:group-hover:text-dark-accent',
+                )}
+              >
+                Components →
+              </h3>
+              <p className={textClasses.secondary}>
+                Master our library of customizable UI components.
+              </p>
+            </Link>
+          </div>
+        </section>
+
+        {/* Components & Tools Section */}
+        <section className="space-y-4">
+          <h2 className={cn('text-xl font-semibold', textClasses.primary)}>
+            Components & Tools
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Link
+              to="/components"
+              className={cn('group', cardClasses.interactive)}
+            >
+              <h3
+                className={cn(
+                  'mb-2 text-lg font-semibold',
+                  textClasses.primary,
+                  'group-hover:text-light-accent retro:group-hover:text-retro-accent multi:group-hover:text-multi-accent dark:group-hover:text-dark-accent',
+                )}
+              >
+                Component Library →
+              </h3>
+              <p className={textClasses.secondary}>
+                Explore and customize our collection of UI components.
+              </p>
+            </Link>
+            <Link
+              to="/playground"
+              className={cn('group', cardClasses.interactive)}
+            >
+              <h3
+                className={cn(
+                  'mb-2 text-lg font-semibold',
+                  textClasses.primary,
+                  'group-hover:text-light-accent retro:group-hover:text-retro-accent multi:group-hover:text-multi-accent dark:group-hover:text-dark-accent',
+                )}
+              >
+                Component Playground →
+              </h3>
+              <p className={textClasses.secondary}>
+                Interactive playground to experiment with components and themes.
+              </p>
+            </Link>
+            <Link to="/tools" className={cn('group', cardClasses.interactive)}>
+              <h3
+                className={cn(
+                  'mb-2 text-lg font-semibold',
+                  textClasses.primary,
+                  'group-hover:text-light-accent retro:group-hover:text-retro-accent multi:group-hover:text-multi-accent dark:group-hover:text-dark-accent',
+                )}
+              >
+                Developer Tools →
+              </h3>
+              <p className={textClasses.secondary}>
+                Useful tools and utilities for development workflow.
               </p>
             </Link>
           </div>

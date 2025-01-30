@@ -14,6 +14,8 @@ export async function action({ request }: ActionFunctionArgs) {
   const progress = Number(formData.get('progress'));
   const totalSteps = Number(formData.get('totalSteps'));
   const totalCards = Number(formData.get('totalCards'));
+  const exampleId = formData.get('exampleId') as string;
+  const totalExamples = Number(formData.get('totalExamples'));
 
   if (!achievementType) {
     return json({ error: 'Achievement type is required' }, { status: 400 });
@@ -119,6 +121,96 @@ export async function action({ request }: ActionFunctionArgs) {
 
         if (masterAchievement) {
           await unlockAchievement(request, user.id, masterAchievement.id);
+        }
+      }
+    } else if (achievementType === 'react-learning') {
+      // Get the achievement ID for this example
+      const { data: achievement } = await supabase
+        .from('achievements')
+        .select('id')
+        .eq('name', achievementName)
+        .single();
+
+      if (achievement) {
+        // Unlock the individual example achievement
+        await unlockAchievement(request, user.id, achievement.id);
+      }
+
+      // Check for progress achievements based on difficulty levels
+      const completedExamples = progress;
+
+      // Beginner progress (first 4 examples)
+      if (completedExamples === 4) {
+        const { data: beginnerAchievement } = await supabase
+          .from('achievements')
+          .select('id')
+          .eq('name', 'React Beginner')
+          .single();
+
+        if (beginnerAchievement) {
+          await unlockAchievement(request, user.id, beginnerAchievement.id);
+        }
+      }
+
+      // Intermediate progress (next 4 examples)
+      if (completedExamples === 8) {
+        const { data: intermediateAchievement } = await supabase
+          .from('achievements')
+          .select('id')
+          .eq('name', 'React Intermediate')
+          .single();
+
+        if (intermediateAchievement) {
+          await unlockAchievement(request, user.id, intermediateAchievement.id);
+        }
+      }
+
+      // Advanced progress (all examples)
+      if (completedExamples === totalExamples) {
+        const { data: advancedAchievement } = await supabase
+          .from('achievements')
+          .select('id')
+          .eq('name', 'React Advanced')
+          .single();
+
+        if (advancedAchievement) {
+          await unlockAchievement(request, user.id, advancedAchievement.id);
+        }
+
+        // Also unlock the master achievement
+        const { data: masterAchievement } = await supabase
+          .from('achievements')
+          .select('id')
+          .eq('name', 'React Master')
+          .single();
+
+        if (masterAchievement) {
+          await unlockAchievement(request, user.id, masterAchievement.id);
+        }
+      }
+
+      // Check for explorer achievement (trying interactive examples)
+      const interactiveExamples = [
+        'useState-mastery',
+        'useEffect-master',
+        'component-pro',
+        'context-expert',
+        'array-methods',
+        'event-handling',
+        'search-filter',
+        'forms-validation',
+        'conditional-rendering',
+      ];
+
+      if (interactiveExamples.includes(exampleId)) {
+        const { data: explorerAchievement } = await supabase
+          .from('achievements')
+          .select('id')
+          .eq('name', 'React Explorer')
+          .single();
+
+        if (explorerAchievement) {
+          await unlockAchievement(request, user.id, explorerAchievement.id);
         }
       }
     }
