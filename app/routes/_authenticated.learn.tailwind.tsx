@@ -235,7 +235,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export default function TailwindPlayground() {
-  const { user } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
   const [activeClasses, setActiveClasses] = useState<ClassesState>({});
   const [customClasses, setCustomClasses] = useState('');
