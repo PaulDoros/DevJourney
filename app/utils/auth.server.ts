@@ -30,23 +30,28 @@ export async function getSession(request: Request) {
 
 // Get user from session
 export async function getUserFromSession(request: Request) {
-  const session = await getSession(request);
-  const userId = session.get('userId');
-
-  if (!userId) return null;
-
   try {
+    const { supabase } = createServerSupabase(request);
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.user) return null;
+
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
-      .eq('id', userId)
+      .eq('id', session.user.id)
       .single();
 
-    if (error || !user) return null;
+    if (error || !user) {
+      console.error('Error fetching user:', error);
+      return null;
+    }
 
     return user;
   } catch (error) {
-    console.error('Error fetching user:', error);
+    console.error('Error in getUserFromSession:', error);
     return null;
   }
 }

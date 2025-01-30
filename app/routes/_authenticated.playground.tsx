@@ -417,7 +417,7 @@ export default function ComponentPlayground() {
           </div>
 
           {/* Preview and Customization */}
-          <div className="space-y-8 overflow-auto">
+          <div className="space-y-8">
             {selectedComponent ? (
               <>
                 {/* Preview */}
@@ -655,7 +655,7 @@ export default function ComponentPlayground() {
                     >
                       Code
                     </h2>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 overflow-hidden">
                       <button
                         onClick={() => setShowSourceCode(!showSourceCode)}
                         className={cn(
@@ -671,35 +671,34 @@ export default function ComponentPlayground() {
                     </div>
                   </div>
                   <div className="relative">
-                    <div className="overflow-hidden rounded-lg bg-gray-50 dark:bg-gray-800">
-                      <div
+                    <pre
+                      className={cn(
+                        'overflow-x-hidden rounded-lg bg-gray-50 p-4 dark:bg-gray-800',
+                        'max-h-[600px] overflow-y-auto',
+                        'scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600',
+                      )}
+                    >
+                      <code
                         className={cn(
-                          'max-h-[600px] overflow-y-auto',
-                          'scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600',
+                          'block whitespace-pre font-mono text-sm',
+                          'min-w-[300px]', // Prevent code from becoming too narrow
+                          showSourceCode
+                            ? 'lg:max-w-[800px]'
+                            : 'lg:max-w-[600px]', // Limit width on larger screens
                         )}
                       >
-                        <pre className="overflow-x-auto p-4">
-                          <code
-                            className={cn(
-                              'block font-mono text-sm',
-                              'text-gray-800 dark:text-gray-200',
-                            )}
-                          >
-                            {showSourceCode
-                              ? selectedComponent.sourceCode
-                              : `<${selectedComponent.name}${Object.entries(
-                                  customProps,
-                                )
-                                  .map(
-                                    ([key, value]) =>
-                                      `\n  ${key}=${typeof value === 'string' ? `"${value}"` : value}`,
-                                  )
-                                  .join('')}
+                        {showSourceCode
+                          ? selectedComponent.sourceCode
+                          : `<${selectedComponent.name}
+  ${Object.entries(customProps)
+    .map(
+      ([key, value]) =>
+        `${key}=${typeof value === 'string' ? `"${value}"` : value}`,
+    )
+    .join('\n  ')}
 />`}
-                          </code>
-                        </pre>
-                      </div>
-                    </div>
+                      </code>
+                    </pre>
                   </div>
                 </section>
               </>

@@ -31,6 +31,7 @@ import { UserAchievement } from './types/achievements';
 import { useAchievementListener } from './hooks/useAchivementToast';
 import { useHydrated } from 'remix-utils/use-hydrated';
 import { ThemeSwitcherError } from './components/ThemeSwitcherError';
+import { createServerSupabase } from './utils/supabase.server';
 
 // Lazy load components that use Framer Motion
 const PageTransition = lazy(() =>
@@ -77,6 +78,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   let userAchievements: UserAchievement[] = [];
 
   if (user) {
+    const { supabase } = createServerSupabase(request);
     const [userAchievementsResponse] = await Promise.all([
       supabase
         .from('user_achievements')
@@ -125,17 +127,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   const location = useLocation();
   const { userAchievements } = useLoaderData<typeof loader>();
+  const navigation = useNavigation();
 
   useAchievementListener(userAchievements);
 
   return (
-    <Suspense fallback={null}>
-      <AnimatePresence mode="wait" initial={false}>
-        <PageTransition key={location.pathname}>
-          <Outlet />
-        </PageTransition>
-      </AnimatePresence>
-    </Suspense>
+    <AnimatePresence mode="wait" initial={false}>
+      <PageTransition key={location.pathname}>
+        <Outlet />
+      </PageTransition>
+    </AnimatePresence>
   );
 }
 
@@ -154,13 +155,13 @@ export function ErrorBoundary() {
           <Links />
         </head>
         <body className="h-full">
-          <div className="flex min-h-screen flex-col items-center justify-center bg-light-secondary">
-            <div className="flex w-full max-w-2xl flex-col items-center justify-center rounded-lg bg-light-primary p-8 shadow-lg">
-              <h1 className="mb-4 text-4xl font-bold text-light-accent">
-                Loading...
-              </h1>
+          <ThemeProvider>
+            <div className="flex min-h-screen flex-col items-center justify-center bg-light-secondary dark:bg-dark-secondary">
+              <div className="flex w-full max-w-2xl flex-col items-center justify-center rounded-lg bg-light-primary p-8 shadow-lg dark:bg-dark-primary">
+                <div className="h-8 w-8 animate-pulse rounded-full bg-light-accent/20 dark:bg-dark-accent/20" />
+              </div>
             </div>
-          </div>
+          </ThemeProvider>
           <Scripts />
         </body>
       </html>

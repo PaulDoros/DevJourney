@@ -68,18 +68,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 }
 
-// Loading component for authenticated layout
-function AuthenticatedLayoutLoading() {
-  return (
-    <div className="bg-background flex h-screen w-full items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <LogoIcon className="h-12 w-12 animate-pulse" />
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    </div>
-  );
-}
-
 export default function AuthenticatedLayout() {
   const navigation = useNavigation();
   const { user, achievements, isFirstLogin } = useLoaderData<typeof loader>();
@@ -93,11 +81,6 @@ export default function AuthenticatedLayout() {
     }
   }, [isFirstLogin]);
 
-  // Only show loading during actual navigation, not during initial load
-  if (navigation.state === 'loading' && navigation.location) {
-    return <AuthenticatedLayoutLoading />;
-  }
-
   return (
     <div
       className={cn(
@@ -107,6 +90,8 @@ export default function AuthenticatedLayout() {
         'multi:border-white/50 multi:bg-gradient-to-br multi:from-multi-gradient-1 multi:via-multi-gradient-2 multi:to-multi-gradient-3',
         'dark:border-gray-600 dark:bg-dark-secondary',
         'md:flex-row',
+        // Add a relative class to contain the loading overlay
+        'relative',
       )}
     >
       <Sidebar open={open} setOpen={setOpen}>

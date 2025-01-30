@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import type { Database } from '~/types/supabase';
 
 if (!process.env.SUPABASE_URL) throw new Error('Missing SUPABASE_URL');
@@ -12,36 +12,37 @@ export const supabase = createClient<Database>(
 );
 
 export function createServerSupabase(request: Request) {
-  const cookies = request.headers.get('Cookie') ?? '';
+  const response = new Response();
 
-  return createServerClient(
+  const supabaseClient = createServerClient(
     process.env.SUPABASE_URL!,
     process.env.SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          const cookie = cookies
-            .split(';')
-            .find((c) => c.trim().startsWith(`${name}=`));
-          if (!cookie) return null;
-          return decodeURIComponent(cookie.split('=')[1]);
+        get(key) {
+          return request.headers.get('cookie');
         },
-        set(name: string, value: string, options: CookieOptions) {
-          // This is handled by the Set-Cookie header in the response
+        set(key, value, options) {
+          response.headers.append('set-cookie', `${key}=${value}`);
         },
-        remove(name: string, options: CookieOptions) {
-          // This is handled by the Set-Cookie header in the response
+        remove(key, options) {
+          response.headers.append('set-cookie', `${key}=; Max-Age=0`);
         },
       },
     },
   );
+
+  return {
+    supabase: supabaseClient,
+    response,
+  };
 }
 
 export async function getSession(request: Request) {
-  const supabaseClient = createServerSupabase(request);
+  const { supabase } = createServerSupabase(request);
   const {
     data: { session },
-  } = await supabaseClient.auth.getSession();
+  } = await supabase.auth.getSession();
   return session;
 }
 
